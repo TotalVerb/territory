@@ -1,0 +1,68 @@
+# Conquer Development Team
+# Territory Development Team
+
+# Classic Skin: changes menu and colours to that of Conquer 0.2
+
+# --------------------------------------------------------------
+# With this file you are able to modify the interface of the
+# game without python knowledge.
+# --------------------------------------------------------------
+
+# Unit images are located in the games root folder.
+# Top left pixel (0,0) in unit image is the transparent color for the unit image.
+
+# If you want to totally make your own interface :)
+# If you do make your own skin, please send it for me too
+# (email: nikoreunanen@gmail.com) and I'll praise and thank you to heavens.
+
+# Test comment for svn :)
+# unit_status_text_topleft_corner is the top left pixel coordinate
+# pair (x)(y) for units description text
+unit_status_text_topleft_corner 30 470
+
+# rgb color for the text (RED)(GREEN)(BLUE)
+# for example, 255 255 255 = white
+unit_status_text_color 255 255 50
+
+# scoreboard_text_topleft_corner is the top left pixel coordinate
+# pair (x)(y) for scoreboard
+scoreboard_text_topleft_corner 625 102
+
+# rgb color for the text (RED)(GREEN)(BLUE)
+# for example, 0 0 0 = black
+scoreboard_text_color 0 0 0
+
+# Player x is making moves...
+making_moves_text_topleft_corner 20 470
+making_moves_text_color 230 230 230
+
+# The buttons are only rectangles at this point. I am sorry.
+# ButtonID (start x) (start y) (end x)  (end y)
+
+Button_ENDTURN 619 336 782 417
+Button_QUIT 607 560 792 591
+
+# List of ButtonID - codes:
+# Button_QUIT
+# Button_ENDTURN
+
+# New settings for the menu (added by Fengyang)
+
+Menu item_colour_selected 255 0 0
+Menu item_colour_default 0 0 0
+Menu logo conquer.png
+Menu background menu.png
+
+# New settings for image locations
+
+Hextile folder images/hextiles/legacy
+
+# New settings for backgrounds
+
+ScreenBg mapedit mapedit.png
+ScreenBg gameboard gameboard.png
+
+# Settings for unit images
+
+UnitImage folder images/units/legacy
+UnitImage default soldier.png

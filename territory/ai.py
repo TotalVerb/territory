@@ -253,35 +253,6 @@ class AI:
             if suhde <= 2:
                 ok = False
 
-        # BUT If we have upgradable soldiers AND over half of the
-        # possible attack targets need better soldiers, we'll
-        # update soldiers :)
-        # FIXME: pretty complicated
-        paatos = False
-        tooweakcount = 0
-        a_searched = []
-        if soldiercounter > 0:
-            unit = Actor(0, 0, board.turn, level=0, dump=False)
-            for xy in tulos[1]:
-                for nx, ny in board.neighbours(xy[0], xy[1]):
-                    if board.validxy(nx, ny):
-                        if (nx, ny) in a_searched:
-                            continue
-                        if board.data[nx, ny] != board.turn:
-                            a_searched.append((nx, ny))
-                            unit.x, unit.y, side = xy[0], xy[1], board.turn
-                            found_hardguy = soldiercounter
-                            for haastaja in levellista:
-                                unit.level = haastaja
-                                if board.is_blocked(
-                                        unit, nx, ny)[3] == "tooweak":
-                                    found_hardguy -= 1
-                            if found_hardguy == 0:
-                                tooweakcount += 1
-            if float(tooweakcount) / float(len(a_searched)) >= 0.3:
-                ok = False
-                paatos = True
-
         # But if we don't have any soldiers, we'll buy them...
         if soldiercounter2 == 0:
             ok = True
@@ -330,11 +301,9 @@ class AI:
 
             # If we didn't buy with every supplies, we can update soldiers
             if m11 or m22:
-                self.update_own_soldiers(city, tulos, ykkoscount,
-                                         soldiercounter2, paatos)
+                self.update_own_soldiers(city, tulos)
         else:
-            self.update_own_soldiers(city, tulos, ykkoscount,
-                                     soldiercounter2, paatos)
+            self.update_own_soldiers(city, tulos)
 
     def buy_units_by_turn(self):
         """
@@ -351,8 +320,7 @@ class AI:
             if city.supplies >= self.server.ruleset.draft_cost:
                 self.draft_soldiers_in_city(city)
 
-    def update_own_soldiers(self, city, tulos, ykkoscount, soldiercounter2,
-                            paatos):
+    def update_own_soldiers(self, city, tulos):
         board = self.board
 
         # Update soldiers with supplies
@@ -361,46 +329,22 @@ class AI:
         # When we'll stop?
         critical_cash = board.server.ruleset.draft_cost
 
-        running = True
-        # We'll update as long as supplies are used or panic has arisen
-        while city.supplies > critical_cash and running:
-            tries += 1
-            # We'll try one hundred times
-            if tries == 100:
-                running = False
-
-            # Iterate through actors
+        # Iterate through actors
+        for _ in range(board.server.ruleset.max_level):
             for unit in board.actors:
-                # Panic - button has been pressed ;)
-                if not running:
-                    break
-
                 # No more income to spend?
-                if city.revenue <= city.expenses:
-                    running = False
+                if city.revenue <= city.expenses or city.supplies <= critical_cash:
                     break
 
                 if (unit.x, unit.y) in tulos[1] \
                         and not unit.dump and not unit.dead \
-                        and unit.side == city.side:
-                    # Level 6 are not updated, level 1 have better chance to be updated.
-                    # But if we just need better soldiers we'll update everyone (paatos).
-                    if unit.level < board.server.ruleset.max_level:
-                        # Level 1 soldiers found
-                        if ykkoscount > 0 and (
-                                    soldiercounter2 - ykkoscount) > 0:
-                            if unit.level == 1:
-                                # No critical need for updates?
-                                if not paatos:
-                                    # 25% change to not to update lvl1
-                                    if random.randint(1, 4) != 2:
-                                        # EI-Ykkosille enemman prioriteettia
-                                        continue
+                        and unit.side == city.side \
+                        and unit.level < board.server.ruleset.max_level:
+                    # Soldier is updated
+                    self.board.draft_soldier(unit.x, unit.y, sound=False)
+            else:
+                # we can probably keep updating.
+                continue
+            # let's not keep updating
+            break
 
-                        # Soldier is updated
-                        self.board.draft_soldier(unit.x, unit.y, sound=False)
-
-                        # Panic with supplies?
-                        if city.supplies <= critical_cash \
-                                or city.revenue - city.expenses <= 0:
-                            running = False

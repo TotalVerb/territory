@@ -45,9 +45,7 @@ BLOCK_DESCRIPTIONS = {
 
 def block_desc(r):
     """Get reason for being blocked."""
-    if r in BLOCK_DESCRIPTIONS:
-        return BLOCK_DESCRIPTIONS[r]
-    return "Blocked."
+    return BLOCK_DESCRIPTIONS.get(r, "Blocked.")
 
 
 class ClientBoard(GameBoard):
@@ -278,11 +276,11 @@ class ClientBoard(GameBoard):
                 if self.data[x, y] > 0:
 
                     # Get pixel coordinates
-                    pixelX, pixelY = hexMapToPixel(x - self.cursor.scroll_x, y)
+                    px, py = hexMapToPixel(x - self.cursor.scroll_x, y)
 
                     # Draw the piece
                     self.screen.blit(self.client.ih.gi(str(self.data[x, y])),
-                                     (pixelX, pixelY))
+                                     (px, py))
 
                     # Check if actor is found at the coordinates
                     actor = self.actor_at(x, y)
@@ -290,15 +288,15 @@ class ClientBoard(GameBoard):
                         if actor.dump:
                             # a Resource Dump was found
                             self.screen.blit(self.client.ih.gi("dump"),
-                                             (pixelX + 3, pixelY + 8))
+                                             (px + 3, py + 8))
 
                             # If the dump is on our side and we are not AI controlled, then we'll
                             # draw the supply count on the dump.
                             if actor.side == self.turn and not self.get_player_by_side(
                                     actor.side).ai_controller:
-                                # self.text_at("%d"%actor.supplies,(pixelX+16,pixelY+11),font=font2,color=(0,0,0),wipe_background = False)
+                                # self.text_at("%d"%actor.supplies,(px+16,py+11),font=font2,color=(0,0,0),wipe_background = False)
                                 self.text_at(str(actor.supplies),
-                                             (pixelX + 15, pixelY + 13),
+                                             (px + 15, py + 13),
                                              font=font2,
                                              wipe_background=False)
                         else:
@@ -310,16 +308,16 @@ class ClientBoard(GameBoard):
                             # Draw soldier
                             self.screen.blit(
                                 self.client.ih.gi("soldier" + str(actor.level)),
-                                (pixelX, pixelY))
+                                (px, py))
                             # Draw text for the soldier
-                            self.text_at(teksti, (pixelX + 20, pixelY + 20),
+                            self.text_at(teksti, (px + 20, py + 20),
                                          font=font1)
         # If an actor is selected, then we'll draw red box around the actor
         if self.cursor.chosen_actor:
-            pixelX, pixelY = hexMapToPixel(self.cursor.x - self.cursor.scroll_x,
+            px, py = hexMapToPixel(self.cursor.x - self.cursor.scroll_x,
                                            self.cursor.y)
             pygame.draw.rect(self.screen, self.cursor.get_color(),
-                             (pixelX, pixelY, 40, 40), 2)
+                             (px, py, 40, 40), 2)
 
         # If an dump is chosen, we'll draw information about it:
         #   Revenues, Expenses, Supplies

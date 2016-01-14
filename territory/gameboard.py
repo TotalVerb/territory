@@ -620,8 +620,6 @@ class GameBoard:
 
         :param just_do_math: If true, only income and expenses are calculated.
         """
-        from territory.client.clientboard import hexMapToPixel
-
         dead = []
         coordinates = set()
         for city in self.cities(sides):
@@ -658,20 +656,6 @@ class GameBoard:
 
                 # Remove the soldier from registered actors
                 self.actors.discard(tmp)
-
-                # TODO: This must be moved to ClientBoard by 0.2.3
-                if self.seenxy(tmp.x, tmp.y):
-                    # a Skull is drawn on the dead soldier
-                    # TODO: Make these graves last one turn...
-                    # TODO: ...then turn them into trees.
-                    px, py = hexMapToPixel(tmp.x - self.cursor.scroll_x, tmp.y)
-                    self.screen.blit(self.client.ih.gi("skull"),
-                                     (px + 10, py + 10))
-                    redisplay_required = True
-
-            if redisplay_required:
-                pygame.display.flip()
-                time.sleep(0.35)  # pause briefly
 
     def draft_soldier(self, x, y, sound=True):
         """Soldier drafting function used by human and computer players."""

@@ -57,13 +57,12 @@ class AI:
                         and current_actor.side == self.board.turn:
                     # Memory for found move
                     m_x = None
-                    m_y = None
 
                     # Memory for found move's points
                     m_p = 0
 
                     # Make a copy of the original map
-                    varmuuskopio = self.board.data.copy()
+                    map_copy = self.board.data.copy()
                     pisteet = []
                     koords = []
                     loppulaskija = 0
@@ -86,9 +85,9 @@ class AI:
                         if pala2 != self.board.turn and pala2 != 0:
 
                             # Is the move possible?
-                            blokkastu = self.board.is_blocked(current_actor, x2,
+                            is_blocked = self.board.is_blocked(current_actor, x2,
                                                               y2)
-                            if not blokkastu[0]:
+                            if not is_blocked[0]:
 
                                 # The move is possible, we'll simulate it
                                 self.board.attempt_move(current_actor, x2, y2,
@@ -125,7 +124,7 @@ class AI:
 
                                 # Restore the original map and try different moves
                                 self.board.data = {}
-                                self.board.data.update(varmuuskopio)
+                                self.board.data.update(map_copy)
 
                                 # Found move better than the one in memory?
                                 if rekursiotulos > m_p:
@@ -167,7 +166,7 @@ class AI:
                                             current_actor.x, current_actor.y] = m_x, m_y
                                         self.board.attempt_move(current_actor,
                                                                 m_x, m_y, False)
-                                        varmuuskopio = self.board.data.copy()
+                                        map_copy = self.board.data.copy()
                                         found_solution = True
                                         own_soldier_actor_set.discard(
                                             current_actor)
@@ -183,148 +182,99 @@ class AI:
         # Return dictionary of made moves
         return act_list
 
-    def draft_soldiers_in_city(self, city: Actor):
-        """Draft soldiers in the given city's island."""
-
-        board = self.board
-
+    def maintain_soldiers(self, city: Actor):
+        """Draft and improve soldiers in the given city's island."""
         # Has the island space for a new soldier?
-        # tulos[0] new random place for actor (not checked if legal)
-        # tulos[1] island's land coordinates
-        tulos = board.rek.recurse_new_random_coord_for_dump_on_island(
+        # place[0] new random place for actor (not checked if legal)
+        # place[1] island's land coordinates
+        place = self.board.rek.recurse_new_random_coord_for_dump_on_island(
             city.x, city.y)
 
         # No space for actor
-        if not tulos:
+        if not place:
             return
+
+        # Draft soldiers
+        self.draft_soldiers_in_city(city, place)
+        self.update_own_soldiers(city, place)
+
+    def draft_soldiers_in_city(self, city: Actor, place):
+        """Draft soldiers in the given city's island."""
+        board = self.board
 
         # 500 tries to find a place for actor
         ok = True
         for _ in range(500):
-            tulos[0] = random.choice(tulos[1])
-            if not board.actor_at(tulos[0]):
+            place[0] = random.choice(place[1])
+            if not board.actor_at(place[0]):
                 break
         else:
-            ok = False
+            return
 
         # Count the amount of lvl<6 soldiers on the island
-        levellista = []
-        soldiercounter = 0
         soldiercounter2 = 0
-        ykkoscount = 0
-        for gctee in tulos[1]:
+        for gctee in place[1]:
             hei = board.actor_at(gctee)
             if hei:
                 if hei.side == board.turn and not hei.dump and not hei.dead:
                     soldiercounter2 += 1
-                    if hei.level == 1:
-                        ykkoscount += 1
-                    if hei.level < self.server.ruleset.max_level:
-                        soldiercounter += 1
-                        levellista.append(hei.level)
 
-        # Does the island has upgradable soldiers (lvl<6)?
-        if soldiercounter != 0:
-            # When the island has soldiers, it is more likely
-            # to update them. 66% chance to update existing
-            # soldiers.
-            if random.randint(1, 3) != 2:
-                ok = False
-
-        vapaat_maat = []
-        for gctee in tulos[1]:
+        vacant_spaces = []
+        for gctee in place[1]:
             if not board.actor_at(gctee):
-                vapaat_maat.append(gctee)
+                vacant_spaces.append(gctee)
 
         # Do we have any soldiers at all?
-        if soldiercounter2 != 0:
-            # We do, count how many free lands there are per soldier
-            suhde = len(vapaat_maat) // soldiercounter2
-            # If three or more, we need new soldiers
-            if suhde >= 3:
-                ok = False
-                tries = 0
-                while not ok and tries < 500:
-                    tries += 1
-                    tulos[0] = random.choice(tulos[1])
-                    if not board.actor_at(tulos[0]):
-                        ok = True
-            # We have probably enough soldiers so update them
-            if suhde <= 2:
-                ok = False
-
-        # But if we don't have any soldiers, we'll buy them...
         if soldiercounter2 == 0:
             ok = True
+        else:
+            # We do, count how many free lands there are per soldier
+            space_per_capita = len(vacant_spaces) // soldiercounter2
+            # If three or more, we need new soldiers
+            if space_per_capita >= 3:
+                ok = False
+                for _ in range(500):
+                    place[0] = random.choice(place[1])
+                    if not board.actor_at(place[0]):
+                        ok = True
+            # We have probably enough soldiers so update them
+            if space_per_capita <= 2:
+                ok = False
 
         # We still shouldn't buy too much
-        if city.revenue - city.expenses < 1:
+        if city.revenue - city.expenses < self.server.ruleset.draft_cost:
             return
 
         if ok:
             # Okay, WE WILL BUY NEW SOLDIERS
-            m11 = random.randint(1, 2) * self.server.ruleset.draft_cost
-            m22 = random.randint(0, 1)
-            # Little variation...
             tries = 0
-            while city.supplies >= m11 \
-                    and city.revenue - city.expenses > m22:
+            while city.supplies >= self.server.ruleset.draft_cost \
+                    and city.revenue - city.expenses > 0:
                 ok2 = False
                 while not ok2 and tries < 500:
                     tries += 1
-                    tulos[0] = random.choice(tulos[1])
-                    if not board.actor_at(tulos[0]):
+                    place[0] = random.choice(place[1])
+                    if not board.actor_at(place[0]):
                         ok2 = True
                 if ok2:
                     # Add new soldier and make financial calculus
 
-                    unit = board.draft_soldier(tulos[0][0], tulos[0][1],
-                                               sound=False)
-
-                    # 90% - (lvl*10%) chance to update it
-                    # So mathematically possibility to update straight to level6:
-                    # 0.8 * 0.7 * 0.6 * 0.5 * 0.4 = 7%
-                    # Straight to level5:
-                    # 17%
-                    # Straight to level4:
-                    # 34%
-                    # And so on...
-
-                    while city.supplies >= self.server.ruleset.draft_cost \
-                            and city.revenue > city.expenses \
-                            and unit.level < self.server.ruleset.max_level:
-                        if random.randint(1, 10) <= 9 - unit.level:
-                            self.board.draft_soldier(
-                                tulos[0][0], tulos[0][1], sound=False)
-                        else:
-                            break
-
-            # If we didn't buy with every supplies, we can update soldiers
-            if m11 or m22:
-                self.update_own_soldiers(city, tulos)
-        else:
-            self.update_own_soldiers(city, tulos)
+                    board.draft_soldier(place[0][0], place[0][1], sound=False)
 
     def buy_units_by_turn(self):
         """
         This function buys and updates soldiers for CPU Players.
         """
-
         board = self.board
-
-        # This is VERY MESSY function, cleaning will be done sometime
 
         # Iterate through a copy as original actors is probably going to be
         # modified (safe=True)
         for city in board.cities(sides=[board.turn], safe=True):
             if city.supplies >= self.server.ruleset.draft_cost:
-                self.draft_soldiers_in_city(city)
+                self.maintain_soldiers(city)
 
-    def update_own_soldiers(self, city, tulos):
+    def update_own_soldiers(self, city, places):
         board = self.board
-
-        # Update soldiers with supplies
-        tries = 0
 
         # When we'll stop?
         critical_cash = board.server.ruleset.draft_cost
@@ -334,17 +284,11 @@ class AI:
             for unit in board.actors:
                 # No more income to spend?
                 if city.revenue <= city.expenses or city.supplies <= critical_cash:
-                    break
+                    return
 
-                if (unit.x, unit.y) in tulos[1] \
+                if (unit.x, unit.y) in places[1] \
                         and not unit.dump and not unit.dead \
                         and unit.side == city.side \
                         and unit.level < board.server.ruleset.max_level:
                     # Soldier is updated
                     self.board.draft_soldier(unit.x, unit.y, sound=False)
-            else:
-                # we can probably keep updating.
-                continue
-            # let's not keep updating
-            break
-

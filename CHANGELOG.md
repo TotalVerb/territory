@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+ * AI enhancements:
+    - Significant simplification of AI code.
+
 ## 0.2.2
 
  * Introduced Python 3 support. Dropped Python 2 support.
@@ -40,11 +45,11 @@
     - Menu logo image: the logo
     - Menu logofolder folder: where the logo is stored
     - Enabled comments in cpu_player_names
-    - Menu item_colour_default
-    - Menu item_colour_selected
+    - Menu `item_colour_default`
+    - Menu `item_colour_selected`
     - Allowed skinning of hextile graphics
     - Allowed skinning of mapedit background
-    - Removed interface_filename option (use ScreenBg gameboard)
+    - Removed `interface_filename` option (use ScreenBg gameboard)
  * Added support for options.ini (imported from Conquer)
     - Change skin
     - Default lines

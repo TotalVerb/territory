@@ -24,9 +24,6 @@
 import random
 
 
-_DEBUG = 0
-
-
 class Recurser:
     def __init__(self, board):
         self.board = board
@@ -70,8 +67,6 @@ class Recurser:
         # 1) Count land area 2) Recurse through one random land
         # 3) If recurse count == land area -> one big continent
         land_area = self.board.count_world_area()
-        if _DEBUG > 1:
-            print("World area: %d" % land_area)
         land_area_rec = set()
 
         for x in range(max_x):
@@ -84,10 +79,7 @@ class Recurser:
 
         self.crawl(x, y, land_area_rec, [1, 2, 3, 4, 5, 6])
 
-        if len(land_area_rec) == land_area:
-            return True
-        else:
-            return False
+        return len(land_area_rec) == land_area
 
     def count_own_islands(self):
         # Count how many islands does player control

@@ -88,7 +88,7 @@ class ClientBoard(GameBoard):
 
         self.cursor.scroll_x = 0
 
-        self.drawmap()
+        self.draw_map()
         # Calculate and sort scores and draw scores
         self.draw_scoreboard(True)
 
@@ -133,7 +133,7 @@ class ClientBoard(GameBoard):
                     # Here the AI makes moves
                     act_dict = player.ai_controller.act()
 
-                    self.drawmap()
+                    self.draw_map()
 
                     # Draw CPU player's moves
                     if self.show_cpu_moves_with_lines:
@@ -155,7 +155,7 @@ class ClientBoard(GameBoard):
                     time.sleep(0.35)  # give some time to view
                     self.end_turn()
                 else:
-                    self.drawmap()
+                    self.draw_map()
                     self.draw_scoreboard(True)
                     pygame.display.flip()
                 if player.won:
@@ -209,7 +209,7 @@ class ClientBoard(GameBoard):
                 # Draw the scoreboard without calculating and sorting scores
                 self.draw_scoreboard(False)
                 # Draw the map
-                self.drawmap()
+                self.draw_map()
                 # Show the drawed content
                 pygame.display.flip()
 
@@ -285,10 +285,8 @@ class ClientBoard(GameBoard):
             # Draw text for the soldier
             self.text_at(text, (px + 20, py + 20), font=font1)
 
-    def drawmap(self):
-        """
-        Game window's drawing routines
-        """
+    def draw_map(self):
+        """Draw the interface."""
 
         # Draw the correct interface
         if not self.map_edit_mode:
@@ -430,7 +428,7 @@ class ClientBoard(GameBoard):
                                        (px + 20, py + 20), 20, 3)
         pygame.display.flip()
         time.sleep(0.5)
-        self.drawmap()
+        self.draw_map()
 
     def attempt_move(self, actor, x2, y2, only_simulation):
         result = super().attempt_move(actor, x2, y2, only_simulation)
@@ -452,7 +450,7 @@ class ClientBoard(GameBoard):
                 pygame.display.flip()
                 # Little time to actually see it
                 time.sleep(0.35)
-                self.drawmap()
+                self.draw_map()
                 pygame.display.flip()
 
 
@@ -463,11 +461,11 @@ def pixel_to_hex_map(x_y):
     grid_pixel_x = x % hex_system.GRID_WIDTH
     grid_pixel_y = y % hex_system.GRID_HEIGHT
     if grid_y & 1:
-        hx = grid_x + hex_system.gridOddRows[grid_pixel_y][grid_pixel_x][0]
-        hy = grid_y + hex_system.gridOddRows[grid_pixel_y][grid_pixel_x][1]
+        hx = grid_x + hex_system.GRID_ODD_ROWS[grid_pixel_y][grid_pixel_x][0]
+        hy = grid_y + hex_system.GRID_ODD_ROWS[grid_pixel_y][grid_pixel_x][1]
     else:
-        hx = grid_x + hex_system.gridEvenRows[grid_pixel_y][grid_pixel_x][0]
-        hy = grid_y + hex_system.gridEvenRows[grid_pixel_y][grid_pixel_x][1]
+        hx = grid_x + hex_system.GRID_EVEN_ROWS[grid_pixel_y][grid_pixel_x][0]
+        hy = grid_y + hex_system.GRID_EVEN_ROWS[grid_pixel_y][grid_pixel_x][1]
     return hx, hy
 
 

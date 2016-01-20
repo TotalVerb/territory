@@ -172,7 +172,6 @@ class Client:
         if flip_immediately:
             pygame.display.flip()
 
-
     def text_input(self, caption, x1_y1, w1_h1, onlynumbers=False):
         x1, y1 = x1_y1
         w1, h1 = w1_h1

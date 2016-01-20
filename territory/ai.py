@@ -87,9 +87,8 @@ class AI:
                         if pala2 != self.board.turn and pala2 != 0:
 
                             # Is the move possible?
-                            is_blocked = self.board.is_blocked(current_actor,
-                                                               x2,
-                                                               y2)
+                            is_blocked = self.board.is_blocked(
+                                current_actor, x2, y2)
                             if not is_blocked[0]:
 
                                 # The move is possible, we'll simulate it

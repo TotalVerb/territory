@@ -26,8 +26,7 @@
 # responsibilities.
 # Some progress was made in Territory 0.2.2... but there's still a lot that can
 # be done.
-# At present, this class actually doesn't work by itself, because there's still
-# some client code that has to be refactored out.
+
 import json
 import random
 import time
@@ -45,7 +44,7 @@ _DEBUG = 0
 
 # Six direction neighbourhood matrix for even y coordinates
 # (0, 2, 4, ..., n % 2 = 0)
-edm_eveny = (
+HEX_EVEN_Y = (
     (1, 0),
     (0, 1),
     (-1, 1),
@@ -56,7 +55,7 @@ edm_eveny = (
 
 # Six direction neighbourhood matrix for odd y coordinates
 # (0, 2, 4, ..., n % 2 = 1)
-edm_oddy = (
+HEX_ODD_Y = (
     (1, 0),
     (1, 1),
     (0, 1),
@@ -80,9 +79,9 @@ class GameBoard:
     def get_right_edm(y: int):
         # Selected right neighbourhood coordinate matrix
         if y % 2 == 1:
-            return edm_oddy
+            return HEX_ODD_Y
         else:
-            return edm_eveny
+            return HEX_EVEN_Y
 
     @classmethod
     def neighbours(cls, x: int, y: int):
@@ -208,19 +207,6 @@ class GameBoard:
         # Make a player-id - list and return it
         return [it.id for it in self.playerlist]
 
-    def get_player_by_name(self, playername):
-        for player in self.playerlist:
-            if player.name == playername:
-                return player
-        return None
-
-    def count_world_specific(self, id_list):
-        laskuri = 0
-        for key, value in self.data.items():
-            if value in id_list:
-                laskuri += 1
-        return laskuri
-
     def count_world_area(self):
         """Count whole world's land count."""
         return sum(1 for v in self.data.values() if v > 0)
@@ -325,10 +311,10 @@ class GameBoard:
         return None
 
     def merge_dumps(self, dump_coords, island_area):
-        """
-        Merge dumps if islands has more than one dump
-        dump_coords -> list of dump coordinates
-        island_area -> list of island's lands coordinates
+        """Merge dumps if the island has more than one dump.
+
+        :param dump_coords: list of dump coordinates
+        :param island_area: list of island's lands coordinates
         """
 
         # Summed supplies from islands dumps
@@ -483,7 +469,6 @@ class GameBoard:
                 d -= 1
 
     def whole_map_situation_score(self, for_whom):
-        # This function is obsolete
         return list(self.data.values()).count(for_whom)
 
     def is_blocked(self, actor, x, y):
@@ -690,13 +675,3 @@ class GameBoard:
         self.salary_time_to_dumps_by_turn([self.turn], False)
         # Update everyone's salaries
         self.salary_time_to_dumps_by_turn(self.get_player_id_list(), True)
-
-        # Check for errors
-        if len(self.playerlist) < self.turn:
-            return
-
-        if not self.playerlist:
-            return
-
-        if not self.get_player_by_side(self.turn):
-            return

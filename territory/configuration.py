@@ -77,50 +77,47 @@ class ConfigurationManager:
                     # Line is comment, go to next line
                     continue
 
-            # Copy the line, pretty useless expression
-            rivi = line
-
             # Make lowercase and split
-            rivi = rivi.lower()
-            rivi = rivi.split(" ")
+            line = line.lower()
+            line = line.split(" ")
 
             # Configuration options into sc, read the skin file for more info
-            if rivi[0] == "unit_status_text_topleft_corner":
+            if line[0] == "unit_status_text_topleft_corner":
                 self.sc["unit_status_text_topleft_corner"] = (
-                    int(rivi[1]), int(rivi[2]))
-            elif rivi[0] == "scoreboard_text_topleft_corner":
+                    int(line[1]), int(line[2]))
+            elif line[0] == "scoreboard_text_topleft_corner":
                 self.sc["scoreboard_text_topleft_corner"] = (
-                    int(rivi[1]), int(rivi[2]))
-            elif rivi[0] == "unit_status_text_color":
+                    int(line[1]), int(line[2]))
+            elif line[0] == "unit_status_text_color":
                 self.sc["unit_status_text_color"] = (
-                    int(rivi[1]), int(rivi[2]), int(rivi[3]))
-            elif rivi[0] == "scoreboard_text_color":
+                    int(line[1]), int(line[2]), int(line[3]))
+            elif line[0] == "scoreboard_text_color":
                 self.sc["scoreboard_text_color"] = (
-                    int(rivi[1]), int(rivi[2]), int(rivi[3]))
-            elif rivi[0] == "button_endturn":
+                    int(line[1]), int(line[2]), int(line[3]))
+            elif line[0] == "button_endturn":
                 self.sc["button_endturn"] = (
-                    (int(rivi[1]), int(rivi[2])), (int(rivi[3]), int(rivi[4])))
-            elif rivi[0] == "button_quit":
+                    (int(line[1]), int(line[2])), (int(line[3]), int(line[4])))
+            elif line[0] == "button_quit":
                 self.sc["button_quit"] = (
-                    (int(rivi[1]), int(rivi[2])), (int(rivi[3]), int(rivi[4])))
-            elif rivi[0] == "making_moves_text_topleft_corner":
+                    (int(line[1]), int(line[2])), (int(line[3]), int(line[4])))
+            elif line[0] == "making_moves_text_topleft_corner":
                 self.sc["making_moves_text_topleft_corner"] = (
-                    int(rivi[1]), int(rivi[2]))
-            elif rivi[0] == "menu_interface_filename":
-                self.sc["menu_interface_filename"] = rivi[1]
-            elif rivi[0] == "making_moves_text_color":
+                    int(line[1]), int(line[2]))
+            elif line[0] == "menu_interface_filename":
+                self.sc["menu_interface_filename"] = line[1]
+            elif line[0] == "making_moves_text_color":
                 self.sc["making_moves_text_color"] = (
-                    int(rivi[1]), int(rivi[2]), int(rivi[3]))
+                    int(line[1]), int(line[2]), int(line[3]))
 
             # New-style lines do not follow a set formula
             else:
-                params = rivi[2:]
+                params = line[2:]
                 paramsc = []
-                if rivi[0] not in self.sc:
-                    self.sc[rivi[0]] = dict()
+                if line[0] not in self.sc:
+                    self.sc[line[0]] = dict()
                 for i in params:
                     try:
                         paramsc.append(int(i))  # Assume integer
                     except ValueError:
                         paramsc.append(i)  # String as contingency plan
-                self.sc[rivi[0]][rivi[1]] = tuple(paramsc)
+                self.sc[line[0]][line[1]] = tuple(paramsc)

@@ -28,6 +28,7 @@
 # be done.
 # At present, this class actually doesn't work by itself, because there's still
 # some client code that has to be refactored out.
+import json
 import random
 import time
 from pathlib import Path
@@ -38,6 +39,7 @@ from territory.actor import Actor
 from territory.player import Player
 from territory.recurser import Recurser
 from territory.server import Server
+import territory.serializer as serializer
 
 _DEBUG = 0
 
@@ -129,22 +131,13 @@ class GameBoard:
 
     def write_edit_map(self, path: Path):
         """Write edited map to file."""
-        # First six lines in map file are reserved for player info.
+        humans, computers = self.map_edit_info[0:2]
         with path.open('w') as file:
-            humans, computers = self.map_edit_info[0:2]
-            # Add human players
-            for i in range(humans):
-                file.write("player\n")
-            # Add CPU players
-            for i in range(computers):
-                file.write("ai\n")
-            # Add absent players: 6 - ((Human Players) + (Cpu Players))
-            for i in range(6 - humans - computers):
-                file.write("none\n")
-            # Iterate keys and values in board DATA and write them
-            # (separated with |)
-            for k1, k2 in self.data.items():
-                file.write("%s|%d\n" % (" ".join(k1), k2))
+            json.dump({
+                "players": ["human" for _ in range(humans)] +
+                           ["ai" for _ in range(computers)],
+                "data": serializer.to_string_dict(self.data)
+            }, file)
 
     def read_scenarios(self):
         # Get list of the scenario - folder's files and remove ".svn" - folder
@@ -541,28 +534,21 @@ class GameBoard:
             self.map_edit_info = [0, 0, 1]
 
         with map_path.open('r') as file:
-            for y, rivi in enumerate(file):
-                if y < 6:
-                    rivi2 = rivi[:-1]
-                    if rivi2 == "player":
-                        if not self.map_edit_mode:
-                            self.playerlist.append(
-                                Player("Player %d" % (y + 1), y + 1, None))
-                        else:
-                            self.map_edit_info[0] += 1
-                    if rivi2 == "ai":
-                        if not self.map_edit_mode:
-                            self.playerlist.append(Player(
-                                "CPU {}".format(y + 1),
-                                y + 1, AI(self)))
-                        else:
-                            self.map_edit_info[1] += 1
-                else:
-                    if len(rivi) > 0:
-                        rivi2 = rivi[:-1]
-                        rivi2 = rivi2.split("|")
-                        hei = tuple(map(int, rivi2[0].split(' ')))
-                        self.data[hei] = int(rivi2[1])
+            data = json.load(file)
+            self.data = serializer.from_string_dict(data["data"])
+            for i, player in enumerate(data["players"]):
+                if player == "human":
+                    if not self.map_edit_mode:
+                        self.playerlist.append(
+                            Player("Player %d" % (i + 1), i + 1, None))
+                    else:
+                        self.map_edit_info[0] += 1
+                elif player == "ai":
+                    if not self.map_edit_mode:
+                        self.playerlist.append(
+                            Player("CPU {}".format(i + 1), i + 1, AI(self)))
+                    else:
+                        self.map_edit_info[1] += 1
 
     def has_anyone_lost_the_game(self):
         # Check if anyone has recently lost the game:

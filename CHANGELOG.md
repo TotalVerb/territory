@@ -5,6 +5,8 @@
  * AI enhancements:
     - Significant simplification of AI code.
     - Remove AI recursion depth setting.
+ * Scenario changes:
+    - Changed format of scenario files.
 
 ## 0.2.2
 

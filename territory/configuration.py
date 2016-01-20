@@ -59,8 +59,6 @@ class ConfigurationManager:
         self.ini_options.read(file)
         # Set our settings
         self.skin_name = self.ini_options.get("MainConf", "skin")
-        self.ai_recursion_depth = int(
-            self.ini_options.get("MainConf", "cpu_recursion_depth"))
         self.show_cpu_moves = self.ini_options.get("MainConf",
                                                    "cpu_movesl") == "true"
         self.ruleset = self.ini_options.get("MainConf", "ruleset")

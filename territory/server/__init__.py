@@ -39,3 +39,17 @@ class Server:
         self.ruleset = ruleset
 
         self.game_path = game_path
+
+        # List for cpu player names and load the names
+        self.cpu_names = []
+        self.load_cpu_names()
+
+    def load_cpu_names(self):
+        """Read names from file to cpu name list."""
+
+        with (self.game_path / "cpu_player_names").open('r') as names:
+            for line in names:
+                line = line.strip()
+                if not line or line[0] == "#":
+                    continue  # Ignore comments/blank lines
+                self.cpu_names.append(line)

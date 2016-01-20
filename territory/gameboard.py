@@ -72,7 +72,7 @@ class CombatEngaged:
 
 
 class GameBoard:
-    """The Game Board, ultimate class for game board and its logic."""
+    """Class for game board and its logic."""
 
     @staticmethod
     def get_right_edm(y: int):
@@ -89,8 +89,10 @@ class GameBoard:
         for i in range(6):
             yield x + edm[i][0], y + edm[i][1]
 
-    def __init__(self, server: Server):
+    def __init__(self, server: Server, ruleset):
         self.server = server
+        self.ruleset = ruleset
+
         # DATA is dictionary which has board pieces.
         # Values: playerid; 0 = Empty Space, 1-6 are player id:s
         self.data = {}
@@ -114,15 +116,8 @@ class GameBoard:
         # Current turn
         self.turn = 1
 
-        # List for cpu player names and load the names
-        self.cpu_names = []
-        self.load_cpu_names()
-
         # Tuple that is used at sorting scorelist
-        self.pisteet_s = ()
-
-        # If the game (actual map view) is running, gamerunning is True
-        self.running = False
+        self.scores = ()
 
         # Actors set (set for optimization purposes) which holds every
         # instance of Actor-class (Soldiers and Dumps at the moment)
@@ -131,18 +126,6 @@ class GameBoard:
 
         # List of current players in a game
         self.playerlist = []
-
-    def load_cpu_names(self):
-        """Read names from file to cpu name list."""
-
-        # TODO: Move this to ServerBoard
-
-        with (self.server.game_path / "cpu_player_names").open('r') as names:
-            for line in names:
-                line = line.strip()
-                if not line or line[0] == "#":
-                    continue  # Ignore comments/blank lines
-                self.cpu_names.append(line)
 
     def write_edit_map(self, path: Path):
         """Write edited map to file."""
@@ -174,7 +157,8 @@ class GameBoard:
         return slc
 
     def new_game(self, scenariofile="unfair", randommap=False,
-                 randomplayers_cpu=3, humanplayers=3):
+                 randomplayers_cpu=3, humanplayers=3,
+                 cpu_names=None):
         """
         Makes everything ready for a new game. Call new_game before calling start_game.
 
@@ -185,7 +169,7 @@ class GameBoard:
 
         # Status Quo Ante (bellum), Settings before war ;)
         self.turn = 1
-        self.pisteet_s = ()
+        self.scores = ()
         self.playerlist = []
         self.map_edit_mode = False
 
@@ -194,12 +178,14 @@ class GameBoard:
             for i in range(humanplayers):
                 self.playerlist.append(
                     Player("Player %d" % (i + 1), i + 1, None))
-            cpu_names = self.cpu_names[:]
             for i in range(randomplayers_cpu):
-                name = random.choice(cpu_names)
-                cpu_names.remove(name)
+                if cpu_names is None:
+                    name = "CPU {}".format(i + 1)
+                else:
+                    name = "{} (cpu)".format(random.choice(cpu_names))
+                    cpu_names.remove(name)
                 self.playerlist.append(
-                    Player("%s (cpu)" % name, i + (humanplayers + 1), AI(self)))
+                    Player(name, i + (humanplayers + 1), AI(self)))
 
         # Clear data and actors from possible previous maps
         self.data = {}
@@ -223,9 +209,7 @@ class GameBoard:
         self.salary_time_to_dumps_by_turn(self.get_player_id_list(), True)
 
     def end_game(self):
-        # Set gamerunning to false and reset to regular music
-        self.running = False
-        soundtrack.play_soundtrack("soundtrack")
+        pass
 
     def get_player_id_list(self):
         # Make a player-id - list and return it
@@ -307,7 +291,7 @@ class GameBoard:
             # Check for success (in lvl-6 vs lvl-6 battles the actor might
             # not succeed!
             if target and not target.dump:
-                success = self.server.ruleset.takeover_attempt(actor, target)
+                success = self.ruleset.takeover_attempt(actor, target)
             else:
                 success = True
 
@@ -517,7 +501,7 @@ class GameBoard:
         return list(self.data.values()).count(for_whom)
 
     def is_blocked(self, actor, x, y):
-        return self.server.ruleset.is_blocked(self, actor, x, y)
+        return self.ruleset.is_blocked(self, actor, x, y)
 
     def generate_map(self, minsize, max_x):
         # Generate simple random map
@@ -569,7 +553,7 @@ class GameBoard:
                     if rivi2 == "ai":
                         if not self.map_edit_mode:
                             self.playerlist.append(Player(
-                                "%s (cpu)" % random.choice(self.cpu_names),
+                                "CPU {}".format(y + 1),
                                 y + 1, AI(self)))
                         else:
                             self.map_edit_info[1] += 1
@@ -620,7 +604,7 @@ class GameBoard:
                 if (unit.x, unit.y) in coordinates and not unit.dump:
                     assert not unit.dead and unit.side == city.side
                     possible_dead.append(unit)
-                    expense += self.server.ruleset.upkeep_costs[unit.level]
+                    expense += self.ruleset.upkeep_costs[unit.level]
             city.revenue = area
             city.expenses = expense
             if not just_do_math:
@@ -661,7 +645,7 @@ class GameBoard:
             if soldier_to_update.dump:
                 return
             # We do not update level 6 soldiers
-            if soldier_to_update.level == self.server.ruleset.max_level:
+            if soldier_to_update.level == self.ruleset.max_level:
                 return
 
         # Get the islands resource dump
@@ -675,9 +659,9 @@ class GameBoard:
         assert actor and actor.dump
 
         # Found the dump, check if it has supplies
-        if actor.supplies >= self.server.ruleset.draft_cost:
+        if actor.supplies >= self.ruleset.draft_cost:
             # It has, now minus draft cost
-            actor.supplies -= self.server.ruleset.draft_cost
+            actor.supplies -= self.ruleset.draft_cost
             if not soldier_to_update:
                 # There wasn't a soldier to update, player draft a new
                 ret = Actor(x, y, actor.side, level=1, dump=False)

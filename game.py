@@ -140,8 +140,8 @@ while main_loop_running:
         if selection > 0:
             # User selected a scenario
             gb.map_edit_mode = False
-            gb.new_game(randommap=False,
-                        scenariofile=newgamemenu.menuitems[selection][0])
+            gb.new_game(scenariofile=newgamemenu.menuitems[selection][0],
+                        randommap=False)
             gb.start_game()
 
     # User selected to generate a random map
@@ -151,7 +151,7 @@ while main_loop_running:
         gb.map_edit_mode = False
 
         # Initialize a new game
-        gb.new_game(randommap=True, humanplayers=m1, randomplayers_cpu=m2)
+        gb.new_game(randommap=True, randomplayers_cpu=m2, humanplayers=m1)
 
         # Start the game
         gb.start_game()

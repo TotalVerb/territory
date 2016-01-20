@@ -52,7 +52,7 @@ class ClientBoard(GameBoard):
     """A game board with drawing capacities."""
 
     def __init__(self, server: Server, client, screen):
-        super().__init__(server)
+        super().__init__(server, server.ruleset)
 
         self.client = client
 
@@ -67,6 +67,9 @@ class ClientBoard(GameBoard):
         # Options
         self.show_cpu_moves = False
 
+        # If the game (actual map view) is running, running is True
+        self.running = False
+
     @property
     def sc(self):
         """The skin configuration."""
@@ -75,10 +78,13 @@ class ClientBoard(GameBoard):
                       category=DeprecationWarning)
         return self.client.configuration.sc
 
-    def new_game(self, scenariofile="unfair", randommap=False,
-                 randomplayers_cpu=3, humanplayers=3):
-        super().new_game(scenariofile, randommap, randomplayers_cpu,
-                         humanplayers)
+    def end_game(self):
+        # Set gamerunning to false and reset to regular music
+        self.running = False
+        soundtrack.play_soundtrack("soundtrack")
+
+    def new_game(self, scenariofile="unfair", **kwargs):
+        super().new_game(scenariofile, **kwargs)
 
         self.cursor.scroll_x = 0
 
@@ -133,12 +139,12 @@ class ClientBoard(GameBoard):
                     # Draw CPU player's moves
                     if self.show_cpu_moves_with_lines:
                         for key, value in act_dict.items():
-                            if self.seenxy(key[0], key[1]) and self.seenxy(
+                            if self.isvisible(key[0], key[1]) and self.isvisible(
                                     value[0],
                                     value[1]):
-                                px1, py1 = hexMapToPixel(
+                                px1, py1 = hex_map_to_pixel(
                                     key[0] - self.cursor.scroll_x, key[1])
-                                px2, py2 = hexMapToPixel(
+                                px2, py2 = hex_map_to_pixel(
                                     value[0] - self.cursor.scroll_x, value[1])
                                 pygame.draw.line(self.screen, (255, 0, 0),
                                                  (px1 + 20, py1 + 20),
@@ -160,7 +166,7 @@ class ClientBoard(GameBoard):
             for eventti in pygame.event.get():
                 # Mouse click
                 if eventti.type == pygame.MOUSEBUTTONDOWN:
-                    x1, y1 = pixelToHexMap(eventti.pos)
+                    x1, y1 = pixel_to_hex_map(eventti.pos)
                     # Scrolling included in calculations
                     x1 += self.cursor.scroll_x
                     # Coordinates into cursor's memory
@@ -207,9 +213,8 @@ class ClientBoard(GameBoard):
                 # Show the drawed content
                 pygame.display.flip()
 
-    def seenxy(self, x, y):
-        """Return True if the coordinate is currently seen by player."""
-        # (not scrolled out of borders)
+    def isvisible(self, x, y):
+        """Return True if the coordinate is currently visible by player."""
         return (0 + self.cursor.scroll_x) <= x <= (14 + self.cursor.scroll_x)
 
     def draw_map_edit_utilities(self):
@@ -276,7 +281,7 @@ class ClientBoard(GameBoard):
                 if self.data[x, y] > 0:
 
                     # Get pixel coordinates
-                    px, py = hexMapToPixel(x - self.cursor.scroll_x, y)
+                    px, py = hex_map_to_pixel(x - self.cursor.scroll_x, y)
 
                     # Draw the piece
                     self.screen.blit(self.client.ih.gi(str(self.data[x, y])),
@@ -314,7 +319,7 @@ class ClientBoard(GameBoard):
                                          font=font1)
         # If an actor is selected, then we'll draw red box around the actor
         if self.cursor.chosen_actor:
-            px, py = hexMapToPixel(self.cursor.x - self.cursor.scroll_x,
+            px, py = hex_map_to_pixel(self.cursor.x - self.cursor.scroll_x,
                                            self.cursor.y)
             pygame.draw.rect(self.screen, self.cursor.get_color(),
                              (px, py, 40, 40), 2)
@@ -356,7 +361,7 @@ class ClientBoard(GameBoard):
                     # Count existing players land count
                     scores[peluri] = self.whole_map_situation_score(peluri.id)
             # Sort points
-            self.pisteet_s = sorted(scores.items(), key=itemgetter(1))
+            self.scores = sorted(scores.items(), key=itemgetter(1))
 
         # Iterate every player
         for player in self.playerlist:
@@ -378,7 +383,7 @@ class ClientBoard(GameBoard):
         counter = 0
         # Draw the scores, counter puts text in right row.
         # Skin configuration file is used here
-        for jau in reversed(self.pisteet_s):
+        for jau in reversed(self.scores):
             # I split the lines here, see the last comma
             self.screen.blit(
                 self.client.ih.gi("%d" % jau[0].id), (
@@ -421,11 +426,11 @@ class ClientBoard(GameBoard):
         # Draw own units that have not moved yet
         for actor in self.actors:
             if not actor.moved and actor.side == self.turn and not actor.dump:
-                if self.seenxy(actor.x, actor.y):
-                    pixelX, pixelY = hexMapToPixel(
+                if self.isvisible(actor.x, actor.y):
+                    px, py = hex_map_to_pixel(
                         actor.x - self.cursor.scroll_x, actor.y)
                     pygame.draw.circle(self.screen, (255, 255, 20),
-                                       (pixelX + 20, pixelY + 20), 20, 3)
+                                       (px + 20, py + 20), 20, 3)
         pygame.display.flip()
         time.sleep(0.5)
         self.drawmap()
@@ -437,12 +442,12 @@ class ClientBoard(GameBoard):
         if isinstance(result, BlockedResponse):
             x, y = result.reason_x, result.reason_y
 
-            if self.seenxy(x, y):
+            if self.isvisible(x, y):
                 # Clear selected actor
                 self.cursor.chosen_actor = None
                 # Convert (scrolled) hex map coordinates into screen pixels
                 # and draw circle there
-                pixelX, pixelY = hexMapToPixel(x - self.cursor.scroll_x, y)
+                pixelX, pixelY = hex_map_to_pixel(x - self.cursor.scroll_x, y)
                 pygame.draw.circle(self.screen, (0, 255, 0),
                                    (pixelX + 20, pixelY + 20), 30, 2)
                 self.text_at(block_desc(result.reason), (pixelX, pixelY + 15),
@@ -454,27 +459,27 @@ class ClientBoard(GameBoard):
                 pygame.display.flip()
 
 
-def pixelToHexMap(x_y):
+def pixel_to_hex_map(x_y):
     x, y = x_y
-    gridX = x // hex_system.GRID_WIDTH
-    gridY = y // hex_system.GRID_HEIGHT
-    gridPixelX = x % hex_system.GRID_WIDTH
-    gridPixelY = y % hex_system.GRID_HEIGHT
-    if gridY & 1:
-        hexMapX = gridX + hex_system.gridOddRows[gridPixelY][gridPixelX][0]
-        hexMapY = gridY + hex_system.gridOddRows[gridPixelY][gridPixelX][1]
+    grid_x = x // hex_system.GRID_WIDTH
+    grid_y = y // hex_system.GRID_HEIGHT
+    grid_pixel_x = x % hex_system.GRID_WIDTH
+    grid_pixel_y = y % hex_system.GRID_HEIGHT
+    if grid_y & 1:
+        hx = grid_x + hex_system.gridOddRows[grid_pixel_y][grid_pixel_x][0]
+        hy = grid_y + hex_system.gridOddRows[grid_pixel_y][grid_pixel_x][1]
     else:
-        hexMapX = gridX + hex_system.gridEvenRows[gridPixelY][gridPixelX][0]
-        hexMapY = gridY + hex_system.gridEvenRows[gridPixelY][gridPixelX][1]
-    return hexMapX, hexMapY
+        hx = grid_x + hex_system.gridEvenRows[grid_pixel_y][grid_pixel_x][0]
+        hy = grid_y + hex_system.gridEvenRows[grid_pixel_y][grid_pixel_x][1]
+    return hx, hy
 
 
-def hexMapToPixel(mapX, mapY):
+def hex_map_to_pixel(x, y):
     """
     Returns the top left pixel location of a hexagon map location.
     """
-    if mapY & 1:
+    if y & 1:
         # Odd rows will be moved to the right.
-        return mapX * hex_system.TILE_WIDTH + hex_system.ODD_ROW_X_MOD, mapY * hex_system.ROW_HEIGHT
+        return x * hex_system.TILE_WIDTH + hex_system.ODD_ROW_X_MOD, y * hex_system.ROW_HEIGHT
     else:
-        return mapX * hex_system.TILE_WIDTH, mapY * hex_system.ROW_HEIGHT
+        return x * hex_system.TILE_WIDTH, y * hex_system.ROW_HEIGHT

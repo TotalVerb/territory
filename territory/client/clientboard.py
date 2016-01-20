@@ -91,7 +91,7 @@ class ClientBoard(GameBoard):
         # If the first player is computer, make it act
         if self.playerlist[0].ai_controller:
             # The AI routines for CPU Player are called from it's AI-Controller
-            self.playerlist[0].ai_controller.act(self.ai_recursion_depth)
+            self.playerlist[0].ai_controller.act()
             # FIXME, cpu intensive?
             # Well anyway, make sure that dumps are on their places
             self.fill_dumps()
@@ -126,7 +126,7 @@ class ClientBoard(GameBoard):
                                  color=kolorissi)
 
                     # Here the AI makes moves
-                    act_dict = player.ai_controller.act(self.ai_recursion_depth)
+                    act_dict = player.ai_controller.act()
 
                     self.drawmap()
 

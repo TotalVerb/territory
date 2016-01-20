@@ -24,6 +24,7 @@
 import random
 from territory.actor import Actor
 
+AI_RECURSION_DEPTH = 10
 
 class AI:
     def __init__(self, board):
@@ -34,7 +35,7 @@ class AI:
         self.board = board
         self.server = board.server
 
-    def act(self, depth):
+    def act(self):
         # Buy units first.
         self.buy_units_by_turn()
 
@@ -47,7 +48,7 @@ class AI:
                     and not soldier.moved:
                 own_soldier_actor_set.add(soldier)
         # More CPU, more depth
-        for askellin in range(self.board.ai_recursion_depth):
+        for askellin in range(AI_RECURSION_DEPTH):
             # We'll iterate every actor through a copy
             for current_actor in own_soldier_actor_set.copy():
                 if current_actor.dead:
@@ -131,17 +132,9 @@ class AI:
                                     # Yes it is, update
                                     m_p = rekursiotulos
                                     m_x = x2
-                                    m_y = y2
-                                if len(pisteet) > depth:
+                                if len(pisteet) > AI_RECURSION_DEPTH:
                                     # Now we have been looking move too long
 
-                                    if len(pisteet) > depth * 5:
-                                        # Found no move...
-                                        # This shouldn't be never executed
-                                        m_x = None
-                                        found_solution = True
-                                        own_soldier_actor_set.discard(
-                                            current_actor)
                                     # If the current found move is better than
                                     # anyone else, we'll choose it
                                     if rekursiotulos > max(pisteet):
@@ -157,7 +150,7 @@ class AI:
                                             current_actor)
                                     # Too much used time here
                                     loppulaskija += 1
-                                    if loppulaskija == depth:
+                                    if loppulaskija == AI_RECURSION_DEPTH:
                                         # We'll choose best move we have found
                                         m_p = max(pisteet)
                                         m_x = koords[pisteet.index(m_p)][0]
@@ -212,12 +205,12 @@ class AI:
             return
 
         # Count the amount of lvl<6 soldiers on the island
-        soldiercounter2 = 0
+        soldier_count = 0
         for gctee in place[1]:
             hei = board.actor_at(gctee)
             if hei:
                 if hei.side == board.turn and not hei.dump and not hei.dead:
-                    soldiercounter2 += 1
+                    soldier_count += 1
 
         vacant_spaces = []
         for gctee in place[1]:
@@ -225,11 +218,11 @@ class AI:
                 vacant_spaces.append(gctee)
 
         # Do we have any soldiers at all?
-        if soldiercounter2 == 0:
+        if soldier_count == 0:
             ok = True
         else:
             # We do, count how many free lands there are per soldier
-            space_per_capita = len(vacant_spaces) // soldiercounter2
+            space_per_capita = len(vacant_spaces) // soldier_count
             # If three or more, we need new soldiers
             if space_per_capita >= 3:
                 ok = False

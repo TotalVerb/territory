@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.2.3
+## 0.3.0
 
  * AI enhancements:
     - Significant simplification of AI code.
+    - Remove AI recursion depth setting.
 
 ## 0.2.2
 

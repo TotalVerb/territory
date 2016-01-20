@@ -32,8 +32,6 @@ import random
 import time
 from pathlib import Path
 
-import pygame
-
 from territory import soundtrack
 from territory.ai import AI
 from territory.actor import Actor
@@ -96,10 +94,6 @@ class GameBoard:
         # DATA is dictionary which has board pieces.
         # Values: playerid; 0 = Empty Space, 1-6 are player id:s
         self.data = {}
-
-        # How many "extra"-recursions cpu will make (max.) trying to figure out
-        # a good move
-        self.ai_recursion_depth = 10
 
         # Pretty self-explanatory
         self.show_cpu_moves_with_lines = True
@@ -353,7 +347,6 @@ class GameBoard:
             return blocked
 
     def get_player_by_side(self, side) -> Player:
-        # Self - explanatory
         for player in self.playerlist:
             if player.id == side:
                 return player
@@ -456,23 +449,18 @@ class GameBoard:
                 if not search_dumps[0] and len(search_dumps[1]) > 1:
 
                     # Panic method to exit loop
-                    tries = 0
-                    while tries < 100:
-                        tries += 1
-
+                    for _ in range(100):
                         # Find a new place for dump:
                         #   - get a random legal coordinate from crawled island
-                        paikka = random.choice(list(search_dumps[1]))
+                        coord = random.choice(list(search_dumps[1]))
 
-                        if paikka:
-                            if not self.actor_at(paikka):
-                                # If a place was found for dump, we'll add
-                                # a new dump in actors.
-                                self.actors.add(Actor(paikka[0], paikka[1],
-                                                      self.data[paikka],
-                                                      dump=True))
-                                # Break the loop
-                                tries = 100
+                        if coord and not self.actor_at(coord):
+                            # If a place was found for dump, we'll add
+                            # a new dump in actors.
+                            self.actors.add(Actor(coord[0], coord[1],
+                                                  self.data[coord],
+                                                  dump=True))
+                            break
 
                 # More than one dump on island?
                 elif len(search_dumps[0]) > 1:
@@ -480,7 +468,6 @@ class GameBoard:
                     self.merge_dumps(search_dumps[0], list(search_dumps[1]))
 
     def fillmap(self, piece):
-        # Self - explanatory
         self.data = {}
         for x in range(30):
             for y in range(14):
@@ -648,8 +635,6 @@ class GameBoard:
                     city.supplies = 0
 
         if not just_do_math:
-            redisplay_required = False
-
             # Kill every soldier that doesn't have enough supplies
             while dead:
                 tmp = dead.pop()

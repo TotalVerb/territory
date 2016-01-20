@@ -6,16 +6,9 @@
 # game without python knowledge.
 # --------------------------------------------------------------
 
-# Unit images are located in the games root folder.
-# Top left pixel (0,0) in unit image is the transparent color for the unit image.
-
-# If you want to totally make your own interface :)
-# If you do make your own skin, please send it for me too
-# (email: nikoreunanen@gmail.com) and I'll praise and thank you to heavens.
 # Please use the png file format.
 interface_filename leiska2.png
 
-# Test comment for svn :)
 # unit_status_text_topleft_corner is the top left pixel coordinate
 # pair (x)(y) for units description text
 unit_status_text_topleft_corner 30 470

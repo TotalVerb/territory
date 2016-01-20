@@ -66,7 +66,7 @@ class Recurser:
             return None
 
     def is_the_whole_earth_connected(self, max_x=30):
-        # Figure out if every land is connected to other
+        """Return true if every land is connected to every other."""
         # 1) Count land area 2) Recurse through one random land
         # 3) If recurse count == land area -> one big continent
         land_area = self.board.count_world_area()

@@ -8,14 +8,6 @@
 # game without python knowledge.
 # --------------------------------------------------------------
 
-# Unit images are located in the games root folder.
-# Top left pixel (0,0) in unit image is the transparent color for the unit image.
-
-# If you want to totally make your own interface :)
-# If you do make your own skin, please send it for me too
-# (email: nikoreunanen@gmail.com) and I'll praise and thank you to heavens.
-
-# Test comment for svn :)
 # unit_status_text_topleft_corner is the top left pixel coordinate
 # pair (x)(y) for units description text
 unit_status_text_topleft_corner 30 470
@@ -46,7 +38,7 @@ Button_QUIT 607 560 792 591
 # Button_QUIT
 # Button_ENDTURN
 
-# New settings for the menu (added by Fengyang)
+# New settings for the menu
 
 Menu item_colour_selected 255 0 0
 Menu item_colour_default 0 0 0

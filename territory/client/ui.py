@@ -43,7 +43,6 @@ class Client:
         # Configuration
         self.configuration = ConfigurationManager()
         self.board.show_cpu_moves = self.configuration.show_cpu_moves
-        self.board.ai_recursion_depth = self.configuration.ai_recursion_depth
 
         # Connect to server
         self.server = server

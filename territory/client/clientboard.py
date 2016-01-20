@@ -27,8 +27,8 @@ import time
 import pygame
 
 from territory import soundtrack, hex_system
-from .resources import font4, font2, mono_font, font3, font1
 from .cursor import Cursor
+from .resources import font4, font2, mono_font, font3, font1
 from territory.gameboard import GameBoard
 from territory.ruleset import BlockedResponse
 from territory.server import Server
@@ -98,9 +98,8 @@ class ClientBoard(GameBoard):
         if self.playerlist[0].ai_controller:
             # The AI routines for CPU Player are called from it's AI-Controller
             self.playerlist[0].ai_controller.act()
-            # FIXME, cpu intensive?
             # Well anyway, make sure that dumps are on their places
-            self.fill_dumps()
+            self.land_was_conquered()
             # Next player's turn
             self.end_turn()
 
@@ -139,7 +138,8 @@ class ClientBoard(GameBoard):
                     # Draw CPU player's moves
                     if self.show_cpu_moves_with_lines:
                         for key, value in act_dict.items():
-                            if self.isvisible(key[0], key[1]) and self.isvisible(
+                            if self.isvisible(key[0],
+                                              key[1]) and self.isvisible(
                                     value[0],
                                     value[1]):
                                 px1, py1 = hex_map_to_pixel(
@@ -259,6 +259,32 @@ class ClientBoard(GameBoard):
                              (620, 130 + counter * 20), font=font4,
                              wipe_background=False, color=(0, 0, 0))
 
+    def draw_actor(self, actor, px, py):
+        if actor.dump:
+            # a Resource Dump was found
+            self.screen.blit(self.client.ih.gi("dump"), (px + 3, py + 8))
+
+            # If the dump is on our side and we are not AI controlled, then
+            # we'll draw the supply count on the dump.
+            if actor.side == self.turn and not self.get_player_by_side(
+                    actor.side).ai_controller:
+                self.text_at(str(actor.supplies),
+                             (px + 15, py + 13),
+                             font=font2,
+                             wipe_background=False)
+        else:
+            # a Soldier was found
+            # Make a text for soldier-> level and X if moved
+            text = str(actor.level)
+            if actor.moved:
+                text += "X"
+            # Draw soldier
+            self.screen.blit(
+                self.client.ih.gi("soldier" + str(actor.level)),
+                (px, py))
+            # Draw text for the soldier
+            self.text_at(text, (px + 20, py + 20), font=font1)
+
     def drawmap(self):
         """
         Game window's drawing routines
@@ -290,37 +316,11 @@ class ClientBoard(GameBoard):
                     # Check if actor is found at the coordinates
                     actor = self.actor_at(x, y)
                     if actor:
-                        if actor.dump:
-                            # a Resource Dump was found
-                            self.screen.blit(self.client.ih.gi("dump"),
-                                             (px + 3, py + 8))
-
-                            # If the dump is on our side and we are not AI controlled, then we'll
-                            # draw the supply count on the dump.
-                            if actor.side == self.turn and not self.get_player_by_side(
-                                    actor.side).ai_controller:
-                                # self.text_at("%d"%actor.supplies,(px+16,py+11),font=font2,color=(0,0,0),wipe_background = False)
-                                self.text_at(str(actor.supplies),
-                                             (px + 15, py + 13),
-                                             font=font2,
-                                             wipe_background=False)
-                        else:
-                            # a Soldier was found
-                            # Make a text for soldier-> level and X if moved
-                            teksti = str(actor.level)
-                            if actor.moved:
-                                teksti += "X"
-                            # Draw soldier
-                            self.screen.blit(
-                                self.client.ih.gi("soldier" + str(actor.level)),
-                                (px, py))
-                            # Draw text for the soldier
-                            self.text_at(teksti, (px + 20, py + 20),
-                                         font=font1)
+                        self.draw_actor(actor, px, py)
         # If an actor is selected, then we'll draw red box around the actor
         if self.cursor.chosen_actor:
             px, py = hex_map_to_pixel(self.cursor.x - self.cursor.scroll_x,
-                                           self.cursor.y)
+                                      self.cursor.y)
             pygame.draw.rect(self.screen, self.cursor.get_color(),
                              (px, py, 40, 40), 2)
 
@@ -342,11 +342,8 @@ class ClientBoard(GameBoard):
                          wipe_background=False, color=text_colour)
             self.screen.blit(self.client.ih.gi("dump"), (x1, y1))
 
-    def text_at(self, text, coords, wipe_background=True, drop_shadow=True,
-                font=font2, color=(255, 255, 255),
-                flip_immediately=False):
-        self.client.text_at(text, coords, wipe_background, drop_shadow,
-                            font, color, flip_immediately)
+    def text_at(self, *args, **kwargs):
+        self.client.text_at(*args, **kwargs)
 
     def draw_scoreboard(self, update=False):
         """

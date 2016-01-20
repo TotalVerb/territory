@@ -89,7 +89,7 @@ class DefaultRuleset:
         found = False
         edm = board.get_right_edm(y)
         for i in range(6):
-            if board.validxy(x + edm[i][0], y + edm[i][1]):
+            if board.isvalid(x + edm[i][0], y + edm[i][1]):
                 # Next to target must be own land. The land must be
                 # from the same island as the actor is from.
                 if (x + edm[i][0], y + edm[i][1]) in crawl_list:
@@ -102,7 +102,7 @@ class DefaultRuleset:
         # Check for enemy unit blockers
         for i in range(6):
             # Is the coordinate valid?
-            if board.validxy(x + edm[i][0], y + edm[i][1]):
+            if board.isvalid(x + edm[i][0], y + edm[i][1]):
                 # Is the targets neighbour same side as the target
                 if board.data[x + edm[i][0], y + edm[i][1]] == board.data[x, y]:
                     # Has the neighbour's adjacent own piece a soldier

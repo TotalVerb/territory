@@ -104,7 +104,7 @@ class GameBoard:
 
         # Fill the whole map with Empty Space.
         # Now the DATA has coordinate keys and values
-        self.fillmap(0)
+        self.fill_map(0)
 
         # Instance of recurser engine
         self.rek = Recurser(self)
@@ -160,7 +160,7 @@ class GameBoard:
         humanplayers -> Human Player count in random generated map
         """
 
-        # Status Quo Ante (bellum), Settings before war ;)
+        # Initial conditions
         self.turn = 1
         self.scores = ()
         self.playerlist = []
@@ -192,7 +192,7 @@ class GameBoard:
             self.load_map(self.server.game_path / "scenarios" / scenariofile)
 
         # Add resource dumps
-        self.fill_dumps()
+        self.land_was_conquered()
 
         # Calculate income and expenses, and do changes for first players
         # supplies
@@ -206,7 +206,7 @@ class GameBoard:
 
     def get_player_id_list(self):
         # Make a player-id - list and return it
-        return [iteraatio.id for iteraatio in self.playerlist]
+        return [it.id for it in self.playerlist]
 
     def get_player_by_name(self, playername):
         for player in self.playerlist:
@@ -223,14 +223,10 @@ class GameBoard:
 
     def count_world_area(self):
         """Count whole world's land count."""
-        laskuri = 0
-        for key, value in self.data.items():
-            if value > 0:
-                laskuri += 1
-        return laskuri
+        return sum(1 for v in self.data.values() if v > 0)
 
     def destroy_lonely_actors(self):
-        # Lonely soldiers will be terminated as well
+        """Destroy soldiers and dumps isolated onto one square."""
         # Let's iterate through the set copy as we may alter the original set
         for actor in self.actors.copy():
             # Only alive soldiers
@@ -238,15 +234,14 @@ class GameBoard:
                 # If we find one (or more) friendly land next to soldier
                 # or resource dump, actor will not be terminated.
                 for nx, ny in self.neighbours(actor.x, actor.y):
-                    if self.validxy(nx, ny) and self.data[nx, ny] == actor.side:
-                        # If there is friendly land next to actor,
-                        # it is not isolated
+                    if self.isvalid(nx, ny) and self.data[nx, ny] == actor.side:
+                        # Adjacent friendly land: not isolated.
                         break
                 else:
-                    # Oh my :( The actor is isolated and it is discarded
+                    # Isolated and therefore discarded
                     self.actors.discard(actor)
 
-    def validxy(self, x: int, y: int):
+    def isvalid(self, x: int, y: int):
         # Valid coordinate is a coordinate which is found in data
         return (x, y) in self.data
 
@@ -278,7 +273,7 @@ class GameBoard:
                 self.actors.discard(actor)
 
                 # Dump creation may be needed.
-                self.fill_dumps()
+                self.land_was_conquered()
                 return
 
             # Check for success (in lvl-6 vs lvl-6 battles the actor might
@@ -307,14 +302,14 @@ class GameBoard:
 
                     # Fix this to check one island (x2, y2) if dump creating
                     # needed
-                    self.fill_dumps()
+                    self.land_was_conquered()
             elif not only_simulation:
                 # Unfortunately the target succeeds and actor dies.
                 actor.die()
                 self.actors.discard(actor)
 
                 # One less actor -> maybe can fill dumps
-                self.fill_dumps()
+                self.land_was_conquered()
 
             # Return result.
             return CombatEngaged(success)
@@ -388,9 +383,8 @@ class GameBoard:
             # Now the dump is registered
             self.actors.add(new_dump)
 
-    def fill_dumps(self):
-        # Fill dumps should be called when lands are conquered
-        # CPU INTENSIVE?
+    def land_was_conquered(self):
+        """Should be called when lands are conquered."""
 
         # Keep count of already searched lands
         searched = set()
@@ -398,7 +392,6 @@ class GameBoard:
         # Get list of current non-lost players
         pelaajat = self.get_player_id_list()
 
-        # Iterate DATA (coordinate and its player id)
         for xy, xy_pid in self.data.items():
 
             # Is the coordinate already crawled
@@ -434,9 +427,9 @@ class GameBoard:
                         if coord and not self.actor_at(coord):
                             # If a place was found for dump, we'll add
                             # a new dump in actors.
-                            self.actors.add(Actor(coord[0], coord[1],
-                                                  self.data[coord],
-                                                  dump=True))
+                            self.actors.add(
+                                Actor(coord[0], coord[1], self.data[coord],
+                                      dump=True))
                             break
 
                 # More than one dump on island?
@@ -444,7 +437,7 @@ class GameBoard:
                     # Then we'll merge dumps on the island
                     self.merge_dumps(search_dumps[0], list(search_dumps[1]))
 
-    def fillmap(self, piece):
+    def fill_map(self, piece):
         self.data = {}
         for x in range(30):
             for y in range(14):
@@ -484,7 +477,7 @@ class GameBoard:
                 x = random.randint(2, max_x - 2)
                 y = random.randint(2, 12)
                 for nx, ny in self.neighbours(x, y):
-                    if self.validxy(nx, ny):
+                    if self.isvalid(nx, ny):
                         playerid = random.choice(for_who)
                         self.data[nx, ny] = playerid
                 d -= 1
@@ -498,14 +491,14 @@ class GameBoard:
 
     def generate_map(self, minsize, max_x):
         # Generate simple random map
-        self.fillmap(0)
+        self.fill_map(0)
         ok = False
         while not ok:
             self.fill_random_boxes(1, [1, 2, 3, 4, 5, 6], max_x)
             if self.rek.is_the_whole_earth_connected(
                     max_x=max_x) and self.count_world_area() >= minsize:
                 ok = True
-        self.fill_dumps()
+        self.land_was_conquered()
         self.salary_time_to_dumps_by_turn(self.get_player_id_list(), True)
 
     def clean_dead(self):
@@ -553,12 +546,12 @@ class GameBoard:
     def has_anyone_lost_the_game(self):
         # Check if anyone has recently lost the game:
         #   - not marked as lost and has 0 dumps
-        for possible_new_loser in self.playerlist:
-            if self.count_dumps_on_world(
-                    possible_new_loser.id) == 0 and not possible_new_loser.lost:
-                possible_new_loser.lost = True
+        for candidate in self.playerlist:
+            if self.count_dumps(
+                    candidate.id) == 0 and not candidate.lost:
+                candidate.lost = True
 
-    def count_dumps_on_world(self, pid):
+    def count_dumps(self, pid):
         return sum(1
                    for actor in self.actors
                    if actor.dump and actor.side == pid and not actor.dead)
@@ -616,7 +609,7 @@ class GameBoard:
         """Soldier drafting function used by human and computer players."""
 
         # Valid coordinate?
-        if not self.validxy(x, y):
+        if not self.isvalid(x, y):
             return
 
         if self.data[x, y] != self.turn:
@@ -674,7 +667,7 @@ class GameBoard:
             self.turn = 0
             self.data = {}
             self.actors.clear()
-            self.fillmap(0)
+            self.fill_map(0)
             return
 
         for player in self.playerlist:

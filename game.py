@@ -172,7 +172,7 @@ while main_loop_running:
         m1, m2 = client.get_human_and_cpu_count()
 
         # Fill map with empty space
-        gb.fillmap(0)
+        gb.fill_map(0)
 
         # Turn the editing mode on
         gb.playerlist = []

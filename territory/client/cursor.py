@@ -25,11 +25,8 @@
 class Cursor:
     """The mouse cursor in-game."""
 
-    def __init__(self, board, client):
-        """
-
-        :type board: territory.client.clientboard.ClientBoard
-        """
+    def __init__(self, board: "territory.client.clientboard.ClientBoard",
+                 client):
         self.x = 10
         self.y = 10
         self.scroll_x = 0
@@ -67,15 +64,12 @@ class Cursor:
                 if self.chosen_actor:
                     self.board.attempt_move(self.chosen_actor, self.x, self.y,
                                             False)
-                    # CPU INTENSIVE?
                     self.board.destroy_lonely_actors()
-                    # CPU INTENSIVE?
                     self.board.has_anyone_lost_the_game()
-                    # CPU INTENSIVE?
                     if self.board.check_and_mark_if_someone_won():
                         self.board.data = {}
                         self.board.actors.clear()
-                        self.board.fillmap(0)
+                        self.board.fill_map(0)
                         return
                 else:
                     # Do we have clicked our own soldier?
@@ -122,3 +116,6 @@ class Cursor:
             return 255, 0, 0
         else:
             return 255, 255, 255
+
+
+import territory.client.clientboard

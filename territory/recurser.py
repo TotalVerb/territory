@@ -110,7 +110,7 @@ class Recurser:
         for xy in land_area_set:
             x1, y1 = xy
             for nx, ny in self.board.neighbours(x1, y1):
-                if self.board.validxy(nx, ny) \
+                if self.board.isvalid(nx, ny) \
                         and self.board.data[nx, ny] != island_owner \
                         and self.board.data[nx, ny] != 0:
                     # This works because set can't have duplicates
@@ -138,7 +138,7 @@ class Recurser:
         recursion_set -> set to hold already "crawled" coordinates
         find_list -> list of players whose lands are to be searched
         """
-        if self.board.validxy(x, y):
+        if self.board.isvalid(x, y):
             # The current land in find_list?
             if self.board.data[x, y] in find_list:
                 # Check whether the location has been crawled already

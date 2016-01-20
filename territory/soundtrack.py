@@ -70,8 +70,6 @@ def play_sfx(name):
         if sfx.get_busy():
             sfx.stop()
         sfx.play(sfxs[name])
-    else:
-        pass  # maybe do something?
 
 
 def init():
@@ -83,5 +81,3 @@ def play_soundtrack(name):
         # TODO: fade out music
         soundtrack.stop()
         soundtrack.play(soundtracks[name], loops=-1)
-    else:
-        pass

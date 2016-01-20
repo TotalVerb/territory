@@ -43,10 +43,7 @@ class Actor:
         assert not self.dead
         self.dead = True
         if sound:
-            if not self.dump:
-                soundtrack.play_sfx("die")
-            else:
-                soundtrack.play_sfx("destroy")
+            soundtrack.play_sfx("die" if self.dump else "destroy")
 
     def upgrade(self, sound=False):
         assert self.level < 6

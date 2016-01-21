@@ -96,7 +96,7 @@ class AI:
                                                         True)
 
                                 # The points of the move
-                                rekursiotulos = self.board.rek.recurse_own_island(
+                                rekursiotulos = self.board.rek.island_size(
                                     current_actor.x, current_actor.y)
 
                                 # Land area of the target island

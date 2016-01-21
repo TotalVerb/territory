@@ -104,7 +104,7 @@ class GameMenu:
             wipe_background=False, centre=True
         )
 
-    def rullaa(self, dy):
+    def shift_menu(self, dy):
         # Change the selected menu item
         self.item_index += dy
         self.item_index %= len(self.menuitems)
@@ -125,7 +125,7 @@ class GameMenu:
                 item[1] = not item[1]
 
     def get_selection(self, text=None):
-        """Render the menu as long as user selects a menuitem
+        """Render the menu as long as user selects a menu item.
 
         :param text: optional text to be rendered
         """
@@ -138,7 +138,6 @@ class GameMenu:
 
         # Endless loop
         while True:
-
             # Limit fps to 30
             clock.tick(30)
 
@@ -146,20 +145,17 @@ class GameMenu:
             for e in pygame.event.get():
                 if e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_DOWN:
-                        self.rullaa(1)
-                        self.draw_items(text)
-                    if e.key == pygame.K_UP:
-                        self.rullaa(-1)
-                        self.draw_items(text)
-                    if e.key == pygame.K_RETURN:
+                        self.shift_menu(1)
+                    elif e.key == pygame.K_UP:
+                        self.shift_menu(-1)
+                    elif e.key == pygame.K_RETURN:
                         tulos = self.select()
                         return tulos
-                    if e.key == pygame.K_LEFT:
+                    elif e.key == pygame.K_LEFT:
                         self.edit_value(-1)
-                        self.draw_items(text)
-                    if e.key == pygame.K_RIGHT:
+                    elif e.key == pygame.K_RIGHT:
                         self.edit_value(1)
-                        self.draw_items(text)
+                    self.draw_items(text)
             pygame.display.flip()
 
     def select(self):

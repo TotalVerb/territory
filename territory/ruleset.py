@@ -84,7 +84,7 @@ class DefaultRuleset:
         crawl_list = set()
 
         # Recurse every land on the island where attacking soldier is
-        board.rek.crawl(actor.x, actor.y, crawl_list, [board.turn])
+        board.rek.crawl(actor.x, actor.y, [board.turn], crawl_list)
 
         found = False
         edm = board.get_right_edm(y)

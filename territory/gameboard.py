@@ -97,6 +97,8 @@ class GameBoard:
         # DATA is dictionary which has board pieces.
         # Values: playerid; 0 = Empty Space, 1-6 are player id:s
         self.data = {}
+        self.width = 30
+        self.height = 14
 
         # Pretty self-explanatory
         self.show_cpu_moves_with_lines = True
@@ -135,7 +137,9 @@ class GameBoard:
             json.dump({
                 "players": ["human" for _ in range(humans)] +
                            ["ai" for _ in range(computers)],
-                "data": serializer.to_string_dict(self.data)
+                "data": serializer.to_string_dict(self.data),
+                "width": self.width,
+                "height": self.height
             }, file)
 
     def read_scenarios(self):
@@ -185,7 +189,7 @@ class GameBoard:
 
         if randommap:
             # Generate random map
-            self.generate_map(50, random.randint(13, 27))
+            self.generate_map(50)
         else:
             # Read a scenario
             self.load_map(self.server.game_path / "scenarios" / scenariofile)
@@ -425,8 +429,8 @@ class GameBoard:
 
     def fill_map(self, piece):
         self.data = {}
-        for x in range(30):
-            for y in range(14):
+        for x in range(self.width):
+            for y in range(self.height):
                 self.data[x, y] = piece
 
     def actor_at(self, x, y=None):
@@ -451,21 +455,20 @@ class GameBoard:
                 return actor
         raise ValueError('no actor found at {}'.format(xy))
 
-    def fill_random_boxes(self, d, for_who, max_x):
+    def fill_random_boxes(self, d, for_whom):
         """
         Fills a random box in the map
-        for_who -> list of playerid:s (randomly selected for land owned)
-        max_x -> map width
+        for_who -> list of player ids (randomly selected for land owned)
         """
         # This just basically randoms coordinates and fills map
         if d > 0:
             while d > 0:
-                x = random.randint(2, max_x - 2)
-                y = random.randint(2, 12)
+                x = random.randint(2, self.width - 1)
+                y = random.randint(2, self.height - 1)
                 for nx, ny in self.neighbours(x, y):
                     if self.isvalid(nx, ny):
-                        playerid = random.choice(for_who)
-                        self.data[nx, ny] = playerid
+                        pid = random.choice(for_whom)
+                        self.data[nx, ny] = pid
                 d -= 1
 
     def whole_map_situation_score(self, for_whom):
@@ -474,20 +477,18 @@ class GameBoard:
     def is_blocked(self, actor, x, y):
         return self.ruleset.is_blocked(self, actor, x, y)
 
-    def generate_map(self, minsize, max_x):
-        # Generate simple random map
+    def generate_map(self, minsize):
+        """Generate a simple random map."""
         self.fill_map(0)
-        ok = False
-        while not ok:
-            self.fill_random_boxes(1, [1, 2, 3, 4, 5, 6], max_x)
-            if self.rek.is_the_whole_earth_connected(
-                    max_x=max_x) and self.count_world_area() >= minsize:
-                ok = True
+        while True:
+            self.fill_random_boxes(1, [1, 2, 3, 4, 5, 6])
+            if self.rek.iscontiguous() and self.count_world_area() >= minsize:
+                break
         self.land_was_conquered()
         self.salary_time_to_dumps_by_turn(self.get_player_id_list(), True)
 
     def clean_dead(self):
-        # Clean dead actors, this is obsolete
+        """Remove dead actors from the map."""
         for actor in self.actors.copy():
             if actor.dead:
                 self.actors.discard(actor)
@@ -504,15 +505,15 @@ class GameBoard:
         return False
 
     def load_map(self, map_path: Path):
-        """
-        Load a map from file
-        """
+        """Load a map from a file."""
         # TODO: Proper error handling.
         if self.map_edit_mode:
             self.map_edit_info = [0, 0, 1]
 
         with map_path.open('r') as file:
             data = json.load(file)
+            self.width = data.get("width", self.width)
+            self.height = data.get("height", self.height)
             self.data = serializer.from_string_dict(data["data"])
             for i, player in enumerate(data["players"]):
                 if player == "human":
@@ -561,7 +562,7 @@ class GameBoard:
             possible_dead = []
             coordinates.clear()
             expense = 0
-            self.rek.crawl(city.x, city.y, coordinates, [city.side])
+            self.rek.crawl(city.x, city.y, [city.side], coordinates)
             area = len(coordinates)
             for unit in self.actors:
                 # Soldiers are costly for dump

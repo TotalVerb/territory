@@ -27,8 +27,6 @@ import random
 class Recurser:
     def __init__(self, board):
         self.board = board
-        self.recursed_land = set()
-        self.recursed_own_land_count = 0
 
     def count_dumps_on_island(self, x, y):
         # Initialize set to be used in crawling
@@ -37,7 +35,7 @@ class Recurser:
         puolisko = self.board.data[x, y]
         # Crawl from (x,y), save crawling to land_area_rec and
         # crawl for playerid found in map data at (x,y)
-        self.crawl(x, y, land_area_rec, [self.board.data[x, y]])
+        self.crawl(x, y, [self.board.data[x, y]], land_area_rec)
         # Lets iterate through crawled places
         for coordinate in land_area_rec:
             # Check if current coordinate has a dump
@@ -52,52 +50,48 @@ class Recurser:
         return [dumps_coord_list, land_area_rec]
 
     def recurse_new_random_coord_for_dump_on_island(self, x, y):
-        land_area_rec = set()
-        self.crawl(x, y, land_area_rec, [self.board.data[x, y]])
-        # Check if island has area to affor dump
-        if len(land_area_rec) > 1:
+        land_area = self.crawl(x, y, [self.board.data[x, y]])
+        # Check if island has area to afford dump
+        if len(land_area) > 1:
             # It has enough area
-            return [random.choice(list(land_area_rec)), list(land_area_rec)]
+            return [random.choice(list(land_area)), list(land_area)]
         else:
             # Not enough area, be careful with handling the None
             return None
 
-    def is_the_whole_earth_connected(self, max_x=30):
-        """Return true if every land is connected to every other."""
-        # 1) Count land area 2) Recurse through one random land
-        # 3) If recurse count == land area -> one big continent
-        land_area = self.board.count_world_area()
-        land_area_rec = set()
-
-        for x in range(max_x):
-            for y in range(14):
+    def find_land(self):
+        """Find a square with land."""
+        for x in range(self.board.width):
+            for y in range(self.board.height):
                 if self.board.data[x, y] > 0:
-                    break
+                    return x, y
 
-        if self.board.data[x, y] == 0:
-            return False
+    def iscontiguous(self):
+        """Return true if every land is connected to every other."""
 
-        self.crawl(x, y, land_area_rec, [1, 2, 3, 4, 5, 6])
+        # Check if there's at least one land. No point handling vacuous truth.
+        land_area = self.board.count_world_area()
+        assert land_area > 0
 
-        return len(land_area_rec) == land_area
+        x, y = self.find_land()
+        return len(self.crawl(x, y, [1, 2, 3, 4, 5, 6])) == land_area
 
-    def count_own_islands(self):
-        # Count how many islands does player control
-        laskuri = 0
-        recursed_islands = set()
-        for x in range(30):
-            for y in range(14):
-                if self.board.data[x, y] == self.board.turn:
-                    if (x, y) not in recursed_islands:
-                        self.recursed_own_land_count = 0
-                        self.crawl(x, y, recursed_islands, [self.board.turn])
-                        laskuri += 1
-        return laskuri
+    def count_owned_islands(self, turn=None):
+        """Count the number of islands controlled by the given player."""
+        turn = turn or self.board.turn
+        acc = 0
+        seen = set()
+        for x in range(self.board.width):
+            for y in range(self.board.height):
+                if (x, y) not in seen and self.board.data[x, y] == turn:
+                    seen |= self.crawl(x, y, [self.board.turn])
+                    acc += 1
+        return acc
 
     def get_island_border_lands(self, x, y):
         land_area_set = set()
         island_owner = self.board.data[x, y]
-        self.crawl(x, y, land_area_set, [island_owner])
+        self.crawl(x, y, [island_owner], land_area_set)
         border_area_set = set()
         for xy in land_area_set:
             x1, y1 = xy
@@ -109,34 +103,22 @@ class Recurser:
                     border_area_set.add((nx, ny))
         return border_area_set
 
-    def recurse_own_island(self, x, y):
-        # Count and recurse through own islands lands
-        self.recursed_land.clear()
-        self.recursed_own_land_count = 0
-        self.crawl(x, y, self.recursed_land, [self.board.turn])
-        return self.recursed_own_land_count
+    def island_size(self, x, y):
+        """Count the amount of land of the specified island."""
+        return len(self.crawl(x, y, [self.board.data[x, y]]))
 
-    def recurse_any_island(self, x, y):
-        # Count and recurse through own islands lands
-        xychosen = self.board.data[x, y]
-        self.recursed_land.clear()
-        self.recursed_own_land_count = 0
-        self.crawl(x, y, self.recursed_land, [xychosen])
-        return self.recursed_own_land_count
-
-    def crawl(self, x, y, recursion_set, find_list):
+    def crawl(self, x, y, find_list, crawled=None):
         """
         x,y -> coordinates to start "crawling"
         recursion_set -> set to hold already "crawled" coordinates
         find_list -> list of players whose lands are to be searched
         """
-        if self.board.isvalid(x, y):
-            # The current land in find_list?
-            if self.board.data[x, y] in find_list:
-                # Check whether the location has been crawled already
-                if (x, y) not in recursion_set:
-                    self.recursed_own_land_count += 1
-                    recursion_set.add((x, y))
-                    for nx, ny in self.board.neighbours(x, y):
-                        # Crawl neighbours
-                        self.crawl(nx, ny, recursion_set, find_list)
+        crawled = crawled if crawled is not None else set()
+        if self.board.isvalid(x, y) and \
+                        self.board.data[x, y] in find_list and \
+                        (x, y) not in crawled:
+            crawled.add((x, y))
+            # Crawl neighbours
+            for nx, ny in self.board.neighbours(x, y):
+                self.crawl(nx, ny, find_list, crawled)
+        return crawled  # places crawled

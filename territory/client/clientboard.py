@@ -56,7 +56,7 @@ class ClientBoard(GameBoard):
 
         self.client = client
 
-        # Pygame screen surface passed as "pointer" for drawing methods
+        # Pygame screen surface for drawing methods
         self.screen = screen
 
         # Instance of cursor
@@ -83,8 +83,8 @@ class ClientBoard(GameBoard):
         self.running = False
         soundtrack.play_soundtrack("soundtrack")
 
-    def new_game(self, scenariofile="unfair", **kwargs):
-        super().new_game(scenariofile, **kwargs)
+    def new_game(self, file="unfair", **kwargs):
+        super().new_game(file, **kwargs)
 
         self.cursor.scroll_x = 0
 
@@ -210,12 +210,12 @@ class ClientBoard(GameBoard):
                 self.draw_scoreboard(False)
                 # Draw the map
                 self.draw_map()
-                # Show the drawed content
+                # Show the drawn content
                 pygame.display.flip()
 
     def isvisible(self, x, y):
         """Return True if the coordinate is currently visible by player."""
-        return (0 + self.cursor.scroll_x) <= x <= (14 + self.cursor.scroll_x)
+        return 0 + self.cursor.scroll_x <= x <= 14 + self.cursor.scroll_x
 
     def draw_map_edit_utilities(self):
         # Extra drawing routines for scenario editing mode
@@ -224,8 +224,8 @@ class ClientBoard(GameBoard):
         if self.map_edit_info[2] == 0:
             tool_name = "Eraser"
         else:
-            if self.map_edit_info[2] <= (
-                        self.map_edit_info[0] + self.map_edit_info[1]):
+            if self.map_edit_info[2] <= \
+                            self.map_edit_info[0] + self.map_edit_info[1]:
                 tool_name = "Player #%d land" % self.map_edit_info[2]
             else:
                 # Land without player in the map, good for connecting player
@@ -379,7 +379,6 @@ class ClientBoard(GameBoard):
         # Draw the scores, counter puts text in right row.
         # Skin configuration file is used here
         for jau in reversed(self.scores):
-            # I split the lines here, see the last comma
             self.screen.blit(
                 self.client.ih.gi("%d" % jau[0].id), (
                     self.sc["scoreboard_text_topleft_corner"][0],
@@ -397,25 +396,21 @@ class ClientBoard(GameBoard):
                          wipe_background=False)
 
             counter += 1
-        try:
-            # Lost players are discarded from playerlist, so next line may
-            # raise an error.
-            tahko = self.get_player_by_side(self.turn)
-            # Human player
-            if not tahko.ai_controller:
-                if not tahko.lost:
-                    # Human player's turn, tell it
-                    self.text_at("Your (%s) turn" % tahko.name, (630, 300),
-                                 color=(0, 0, 0),
-                                 font=font3, wipe_background=False)
-                else:
-                    # The human player has lost, tell it
-                    self.text_at("You (%s) lost..." % tahko.name, (635, 300),
-                                 color=(0, 0, 0),
-                                 font=font3, wipe_background=False)
-        except:
-            # Error occurred, well do nothing about it...
-            pass
+
+        player = self.get_player_by_side(self.turn)
+
+        # Check for human; note lost players are discarded from player list
+        if player and not player.ai_controller:
+            if not player.lost:
+                # Human player's turn, tell it
+                self.text_at("Your (%s) turn" % player.name, (630, 300),
+                             color=(0, 0, 0),
+                             font=font3, wipe_background=False)
+            else:
+                # The human player has lost, tell it
+                self.text_at("You (%s) lost..." % player.name, (635, 300),
+                             color=(0, 0, 0),
+                             font=font3, wipe_background=False)
 
     def show_own_units_that_can_move(self):
         # Draw own units that have not moved yet
@@ -442,10 +437,10 @@ class ClientBoard(GameBoard):
                 self.cursor.chosen_actor = None
                 # Convert (scrolled) hex map coordinates into screen pixels
                 # and draw circle there
-                pixelX, pixelY = hex_map_to_pixel(x - self.cursor.scroll_x, y)
+                px, py = hex_map_to_pixel(x - self.cursor.scroll_x, y)
                 pygame.draw.circle(self.screen, (0, 255, 0),
-                                   (pixelX + 20, pixelY + 20), 30, 2)
-                self.text_at(block_desc(result.reason), (pixelX, pixelY + 15),
+                                   (px + 20, py + 20), 30, 2)
+                self.text_at(block_desc(result.reason), (px, py + 15),
                              font=font2)
                 pygame.display.flip()
                 # Little time to actually see it

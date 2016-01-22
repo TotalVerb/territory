@@ -152,15 +152,13 @@ class GameBoard:
                ]
         return slc
 
-    def new_game(self, scenariofile="unfair", randommap=False,
-                 randomplayers_cpu=3, humanplayers=3,
-                 cpu_names=None):
+    def new_game(self, file=None, cpus=3, humans=3, cpu_names=None):
         """
-        Makes everything ready for a new game. Call new_game before calling start_game.
+        Prepare a new game.
 
-        scenariofile -> Filename for scenario if randommap is set to False
-        randomplayers_cpu -> CPU Player count in random generated map
-        humanplayers -> Human Player count in random generated map
+        :param file: Filename for scenario; None for random generation
+        :param cpus: CPU Player count in random generated map
+        :param humans: Human Player count in random generated map
         """
 
         # Initial conditions
@@ -170,29 +168,29 @@ class GameBoard:
         self.map_edit_mode = False
 
         # If map is randomly generated, add players
-        if randommap:
-            for i in range(humanplayers):
+        if file is None:
+            for i in range(humans):
                 self.playerlist.append(
                     Player("Player %d" % (i + 1), i + 1, None))
-            for i in range(randomplayers_cpu):
+            for i in range(cpus):
                 if cpu_names is None:
                     name = "CPU {}".format(i + 1)
                 else:
                     name = "{} (cpu)".format(random.choice(cpu_names))
                     cpu_names.remove(name)
                 self.playerlist.append(
-                    Player(name, i + (humanplayers + 1), AI(self)))
+                    Player(name, i + (humans + 1), AI(self)))
 
         # Clear data and actors from possible previous maps
         self.data = {}
         self.actors.clear()
 
-        if randommap:
+        if file is None:
             # Generate random map
             self.generate_map(50)
         else:
             # Read a scenario
-            self.load_map(self.server.game_path / "scenarios" / scenariofile)
+            self.load_map(self.server.game_path / "scenarios" / file)
 
         # Add resource dumps
         self.land_was_conquered()
@@ -201,11 +199,8 @@ class GameBoard:
         # supplies
         self.salary_time_to_dumps_by_turn([1], False)
 
-        # JUST ONLY calculate everyone's supply income and expends
+        # Calculate everyone's supply, income and expenses
         self.salary_time_to_dumps_by_turn(self.get_player_id_list(), True)
-
-    def end_game(self):
-        pass
 
     def get_player_id_list(self):
         # Make a player-id - list and return it
@@ -304,15 +299,13 @@ class GameBoard:
             # Return result.
             return CombatEngaged(success)
         else:
-            # Target is blocked.
-            # Return the reason for blocking.
+            # Target is blocked. Return the reason for blocking.
             return blocked
 
     def get_player_by_side(self, side) -> Player:
         for player in self.playerlist:
             if player.id == side:
                 return player
-        return None
 
     def merge_dumps(self, dump_coords, island_area):
         """Merge dumps if the island has more than one dump.
@@ -380,7 +373,7 @@ class GameBoard:
         searched = set()
 
         # Get list of current non-lost players
-        pelaajat = self.get_player_id_list()
+        alive_players = self.get_player_id_list()
 
         for xy, xy_pid in self.data.items():
 
@@ -389,7 +382,7 @@ class GameBoard:
                 continue
 
             # Fill Dumps only for existing and not lost players
-            if xy_pid not in pelaajat:
+            if xy_pid not in alive_players:
                 continue
 
             x, y = xy
@@ -641,9 +634,7 @@ class GameBoard:
 
     def end_turn(self):
 
-        # CPU INTENSIVE?
         self.destroy_lonely_actors()
-        # CPU INTENSIVE?
         self.has_anyone_lost_the_game()
 
         # Mark winner if found and get immediately "True"

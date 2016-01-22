@@ -22,7 +22,7 @@
 # ------------------------------------------------------------------------
 
 
-# Player that populates playerlist
+# Player that populates player list
 class Player:
     def __init__(self, name, id_, ai):
         self.name = name

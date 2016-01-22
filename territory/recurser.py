@@ -21,8 +21,6 @@
 #
 # ------------------------------------------------------------------------
 
-import random
-
 
 class Recurser:
     def __init__(self, board):
@@ -43,16 +41,6 @@ class Recurser:
                 dumps_coord_list.append(coordinate)
         return [dumps_coord_list, land_area]
 
-    def recurse_new_random_coord_for_dump_on_island(self, x, y):
-        land_area = self.crawl(x, y, [self.board.data[x, y]])
-        # Check if island has area to afford dump
-        if len(land_area) > 1:
-            # It has enough area
-            return [random.choice(list(land_area)), list(land_area)]
-        else:
-            # Not enough area, be careful with handling the None
-            return None
-
     def find_land(self):
         """Find a square with land."""
         for x in range(self.board.width):
@@ -69,18 +57,6 @@ class Recurser:
 
         x, y = self.find_land()
         return len(self.crawl(x, y, [1, 2, 3, 4, 5, 6])) == land_area
-
-    def count_owned_islands(self, turn=None):
-        """Count the number of islands controlled by the given player."""
-        turn = turn or self.board.turn
-        acc = 0
-        seen = set()
-        for x in range(self.board.width):
-            for y in range(self.board.height):
-                if (x, y) not in seen and self.board.data[x, y] == turn:
-                    seen |= self.crawl(x, y, [self.board.turn])
-                    acc += 1
-        return acc
 
     def get_island_border_lands(self, x, y):
         land_area_set = set()

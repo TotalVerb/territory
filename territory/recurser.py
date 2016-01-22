@@ -29,25 +29,19 @@ class Recurser:
         self.board = board
 
     def count_dumps_on_island(self, x, y):
-        # Initialize set to be used in crawling
-        land_area_rec = set()
         dumps_coord_list = []
-        puolisko = self.board.data[x, y]
-        # Crawl from (x,y), save crawling to land_area_rec and
-        # crawl for playerid found in map data at (x,y)
-        self.crawl(x, y, [self.board.data[x, y]], land_area_rec)
-        # Lets iterate through crawled places
-        for coordinate in land_area_rec:
+        player = self.board.data[x, y]
+        # Crawl island from (x, y)
+        land_area = self.crawl(x, y, [player])
+        # Let's iterate through crawled places
+        for coordinate in land_area:
             # Check if current coordinate has a dump
             # (data can take the coordinate-string)
-            actorinssi = self.board.actor_at(coordinate)
-            if actorinssi:
-                if actorinssi.dump:
-                    if actorinssi.side != puolisko:
-                        self.board.actors.remove(actorinssi)
-                    else:
-                        dumps_coord_list.append(coordinate)
-        return [dumps_coord_list, land_area_rec]
+            actor = self.board.actor_at(coordinate)
+            if actor and actor.dump:
+                assert actor.side == player
+                dumps_coord_list.append(coordinate)
+        return [dumps_coord_list, land_area]
 
     def recurse_new_random_coord_for_dump_on_island(self, x, y):
         land_area = self.crawl(x, y, [self.board.data[x, y]])

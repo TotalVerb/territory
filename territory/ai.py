@@ -49,7 +49,7 @@ class AI:
                     and not soldier.moved:
                 own_soldier_actor_set.add(soldier)
         # More CPU, more depth
-        for askellin in range(AI_RECURSION_DEPTH):
+        for depth in range(AI_RECURSION_DEPTH):
             # We'll iterate every actor through a copy
             for current_actor in own_soldier_actor_set.copy():
                 if current_actor.dead:
@@ -96,17 +96,8 @@ class AI:
                                                         True)
 
                                 # The points of the move
-                                rekursiotulos = self.board.rek.island_size(
+                                move_score = self.board.rek.island_size(
                                     current_actor.x, current_actor.y)
-
-                                # Land area of the target island
-                                vastustajan_saaren_vahvuus = self.board.rek.recurse_new_random_coord_for_dump_on_island(
-                                    x2, y2)
-
-                                # We'll favour more to conquer from large islands
-                                if vastustajan_saaren_vahvuus[1]:
-                                    rekursiotulos += len(
-                                        vastustajan_saaren_vahvuus[1]) / 5
 
                                 # Is there an actor at target land?
                                 defender = self.board.actor_at(x2, y2)
@@ -114,14 +105,14 @@ class AI:
                                     # There is an actor at target land,
                                     # we'll add it into moves points
                                     if defender.dump and current_actor.level > 1:
-                                        rekursiotulos += 5
-                                        rekursiotulos += defender.supplies // 2
-                                        rekursiotulos += defender.revenue - defender.expenses
+                                        move_score += 5
+                                        move_score += defender.supplies // 2
+                                        move_score += defender.revenue - defender.expenses
                                     else:
-                                        rekursiotulos += defender.level * 2
+                                        move_score += defender.level * 2
 
                                 # Put the move and it's points in memory
-                                pisteet.append(rekursiotulos)
+                                pisteet.append(move_score)
                                 koords.append((x2, y2))
 
                                 # Restore the original map and try different moves
@@ -129,17 +120,17 @@ class AI:
                                 self.board.data.update(map_copy)
 
                                 # Found move better than the one in memory?
-                                if rekursiotulos > m_p:
+                                if move_score > m_p:
                                     # Yes it is, update
-                                    m_p = rekursiotulos
+                                    m_p = move_score
                                     m_x = x2
                                 if len(pisteet) > AI_RECURSION_DEPTH:
                                     # Now we have been looking move too long
 
                                     # If the current found move is better than
                                     # anyone else, we'll choose it
-                                    if rekursiotulos > max(pisteet):
-                                        m_p = rekursiotulos
+                                    if move_score > max(pisteet):
+                                        m_p = move_score
                                         m_x = x2
                                         m_y = y2
                                         act_list[
@@ -178,82 +169,35 @@ class AI:
 
     def maintain_soldiers(self, city: Actor):
         """Draft and improve soldiers in the given city's island."""
-        # Has the island space for a new soldier?
-        # place[0] new random place for actor (not checked if legal)
-        # place[1] island's land coordinates
-        place = self.board.rek.recurse_new_random_coord_for_dump_on_island(
-            city.x, city.y)
-
-        # No space for actor
-        if not place:
-            return
+        # Island's land coordinates
+        place = list(self.board.rek.crawl(city.x, city.y, [city.side]))
 
         # Draft soldiers
         self.draft_soldiers_in_city(city, place)
         self.update_own_soldiers(city, place)
 
-    def draft_soldiers_in_city(self, city: Actor, place):
+    def draft_soldiers_in_city(self, city: Actor, places):
         """Draft soldiers in the given city's island."""
         board = self.board
 
-        # 500 tries to find a place for actor
-        ok = True
-        for _ in range(500):
-            place[0] = random.choice(place[1])
-            if not board.actor_at(place[0]):
-                break
-        else:
-            return
-
-        # Count the amount of lvl<6 soldiers on the island
+        # Count the amount of soldiers on the island
         soldier_count = 0
-        for gctee in place[1]:
-            hei = board.actor_at(gctee)
-            if hei:
-                if hei.side == board.turn and not hei.dump and not hei.dead:
-                    soldier_count += 1
+        for option in places:
+            hei = board.actor_at(option)
+            if hei and hei.side == board.turn and not hei.dump and not hei.dead:
+                soldier_count += 1
 
-        vacant_spaces = []
-        for gctee in place[1]:
-            if not board.actor_at(gctee):
-                vacant_spaces.append(gctee)
+        vacant_spaces = [place for place in places if not board.actor_at(place)]
 
-        # Do we have any soldiers at all?
-        if soldier_count == 0:
-            ok = True
-        else:
-            # We do, count how many free lands there are per soldier
-            space_per_capita = len(vacant_spaces) // soldier_count
-            # If three or more, we need new soldiers
-            if space_per_capita >= 3:
-                ok = False
-                for _ in range(500):
-                    place[0] = random.choice(place[1])
-                    if not board.actor_at(place[0]):
-                        ok = True
-            # We have probably enough soldiers so update them
-            if space_per_capita <= 2:
-                ok = False
-
-        # We still shouldn't buy too much
-        if city.revenue - city.expenses < self.server.ruleset.draft_cost:
-            return
-
-        if ok:
-            # Okay, WE WILL BUY NEW SOLDIERS
-            tries = 0
+        # Heuristic: Should we buy soldiers?
+        if len(vacant_spaces) > soldier_count * 3:
+            # We will buy new soldiers.
             while city.supplies >= self.server.ruleset.draft_cost \
-                    and city.revenue - city.expenses > 0:
-                ok2 = False
-                while not ok2 and tries < 500:
-                    tries += 1
-                    place[0] = random.choice(place[1])
-                    if not board.actor_at(place[0]):
-                        ok2 = True
-                if ok2:
-                    # Add new soldier and make financial calculus
-
-                    board.draft_soldier(place[0][0], place[0][1], sound=False)
+                    and city.revenue - city.expenses > 0 \
+                    and vacant_spaces:
+                location = random.choice(vacant_spaces)
+                board.draft_soldier(places[0][0], places[0][1], sound=False)
+                vacant_spaces.remove(location)
 
     def buy_units_by_turn(self):
         """

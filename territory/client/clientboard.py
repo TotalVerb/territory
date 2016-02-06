@@ -83,8 +83,8 @@ class ClientBoard(GameBoard):
         self.running = False
         soundtrack.play_soundtrack("soundtrack")
 
-    def new_game(self, file="unfair", **kwargs):
-        super().new_game(file, **kwargs)
+    def new_game(self, *args, **kwargs):
+        super().new_game(*args, **kwargs)
 
         self.cursor.scroll_x = 0
 

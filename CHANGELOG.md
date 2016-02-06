@@ -3,6 +3,7 @@
 ## 0.3.0
 
  * AI enhancements:
+    - Optimization of AIs; they run much faster now.
     - Significant simplification of AI code.
     - Remove AI recursion depth setting.
  * Scenario changes:

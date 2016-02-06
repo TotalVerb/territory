@@ -183,8 +183,8 @@ class AI:
         # Count the amount of soldiers on the island
         soldier_count = 0
         for option in places:
-            hei = board.actor_at(option)
-            if hei and hei.side == board.turn and not hei.dump and not hei.dead:
+            act = board.actor_at(option)
+            if act and act.side == board.turn and not act.dump and not act.dead:
                 soldier_count += 1
 
         vacant_spaces = [place for place in places if not board.actor_at(place)]
@@ -196,7 +196,7 @@ class AI:
                     and city.revenue - city.expenses > 0 \
                     and vacant_spaces:
                 location = random.choice(vacant_spaces)
-                board.draft_soldier(places[0][0], places[0][1], sound=False)
+                board.draft_soldier(location[0], location[1], sound=False)
                 vacant_spaces.remove(location)
 
     def buy_units_by_turn(self):
@@ -224,7 +224,7 @@ class AI:
                 if city.revenue <= city.expenses or city.supplies <= critical_cash:
                     return
 
-                if (unit.x, unit.y) in places[1] \
+                if (unit.x, unit.y) in places \
                         and not unit.dump and not unit.dead \
                         and unit.side == city.side \
                         and unit.level < board.server.ruleset.max_level:
